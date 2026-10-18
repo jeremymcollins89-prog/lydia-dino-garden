@@ -149,7 +149,8 @@ button:focus-visible{outline:4px solid var(--gold);outline-offset:4px}
   box-shadow:0 14px 26px rgba(20,6,38,.4),inset 0 -8px 16px rgba(46,26,71,.22),0 0 0 6px rgba(255,247,243,.16)}
 .stone .disc svg{width:56%;height:56%;pointer-events:none;overflow:visible}
 .stone .disc .emoji{font-size:clamp(34px,6vmin,58px)}
-.stone .label{font-size:clamp(14px,2.1vmin,19px);font-weight:600;text-align:center;line-height:1.15;text-wrap:balance}
+.stone .label{font-size:clamp(14px,2.1vmin,19px);font-weight:600;text-align:center;line-height:1.15;text-wrap:balance;text-shadow:0 1px 2px rgba(46,26,71,.9),0 2px 10px rgba(46,26,71,.75)}
+.unit-sub,.unit-title{text-shadow:0 1px 2px rgba(46,26,71,.9),0 2px 12px rgba(46,26,71,.7)}
 .stone .badge{position:absolute;top:-6%;right:-6%;width:38%;height:38%;filter:drop-shadow(0 3px 6px rgba(20,6,38,.4))}
 .stone.next .disc{animation:ring 1.6s ease-in-out infinite}
 .stone .here{position:absolute;top:-14%;left:-30%;width:54%;animation:float 2.4s ease-in-out infinite;pointer-events:none}
@@ -210,6 +211,17 @@ button:focus-visible{outline:4px solid var(--gold);outline-offset:4px}
 .nextbtn svg{width:46%;height:46%}
 .nextbtn.glow{animation:ring 1.4s ease-in-out infinite}
 .emoji{font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;line-height:1;display:inline-block}
+.tens{display:flex;flex-direction:column;gap:clamp(6px,1.2vmin,12px);align-items:flex-start;margin:0 auto}
+.tenrow{display:flex;gap:clamp(4px,.9vmin,9px)}
+.dot{width:clamp(18px,3vmin,30px);aspect-ratio:1;border-radius:50%;background:#c9a6ff;box-shadow:inset 0 -3px 0 rgba(46,26,71,.2);transition:transform .25s cubic-bezier(.3,1.6,.5,1),background .25s,box-shadow .25s;flex:none}
+.tenrow:nth-child(2) .dot{background:#ffb070}.tenrow:nth-child(3) .dot{background:#7fd8c3}
+.dot.lit,.dot.on{background:var(--gold)!important;transform:scale(1.18);box-shadow:0 0 10px rgba(255,210,122,.9)}
+.stage .tens .dot{width:clamp(30px,5.4vmin,52px)}
+.meet .tens .dot{width:clamp(16px,2.8vmin,28px)}
+.count-badge{font-size:clamp(40px,7vmin,70px);font-weight:700;color:var(--gold);line-height:1;text-shadow:0 4px 0 rgba(46,26,71,.4);font-variant-numeric:tabular-nums}
+.stones.many .stone{width:clamp(78px,11vmin,118px)}
+.stones.many .stone:nth-child(even){margin-top:5vh}
+.stones.many{gap:clamp(10px,2vmin,24px) clamp(10px,2.2vmin,26px);max-width:min(100%,calc(6 * clamp(78px,11vmin,118px) + 5 * clamp(10px,2.2vmin,26px) + 4px))}
 .count-items{display:flex;flex-wrap:wrap;gap:clamp(6px,1.6vmin,18px);justify-content:center;max-width:min(92%,820px)}
 .citem{position:relative;font-size:clamp(46px,8.6vmin,84px);transition:transform .3s cubic-bezier(.3,1.6,.5,1),filter .3s}
 .citem.on{transform:scale(1.18);filter:drop-shadow(0 0 12px #ffd27a)}
@@ -973,6 +985,27 @@ function speak(text, cancel = true) {
     s.speak(u);
   } catch (e) {}
 }
+/* Speak a sequence and run each part's highlight exactly when the voice starts it.
+   If the device never reports speech starting, fall back to a steady timer. */
+function speakSeq(parts) {
+  const st = { started: false };
+  try {
+    const s = window.speechSynthesis; if (!s) return st;
+    s.cancel();
+    const kid = isKidVoice(voice);
+    parts.forEach(pt => {
+      const u = new SpeechSynthesisUtterance(pt.t); u.lang = 'en-US'; if (voice) u.voice = voice;
+      u.rate = (pt.rate || 1) * (kid ? .95 : .92); u.pitch = kid ? 1.05 : 1.25;
+      u.onstart = () => { st.started = true; if (pt.on) pt.on(); };
+      s.speak(u);
+    });
+  } catch (e) {}
+  return st;
+}
+function syncedSay(parts, gap = 1100) {
+  const st = speakSeq(parts);
+  later(() => { if (!st.started) parts.forEach((pt, i) => later(() => pt.on && pt.on(), i * gap)); }, 1600);
+}
 function voicePanel() {
   const vs = englishVoices().slice(0, 10);
   const ov = document.createElement('div'); ov.className = 'voice-ov';
@@ -987,6 +1020,17 @@ const hush = () => { try { speechSynthesis.cancel(); } catch (e) {} };
 const PRAISE = ['Great job!', 'You did it!', 'Yes! That’s right!', 'Wonderful!', 'Super, Lydia!', 'Way to go!', 'Perfect!', 'You’re so smart!'];
 const praise = () => PRAISE[rand(PRAISE.length)];
 const NUMW = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+const ONESW = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+const numWord = n => n < 20 ? ONESW[n] : ['', '', 'twenty', 'thirty', 'forty'][Math.floor(n / 10)] + (n % 10 ? '-' + ONESW[n % 10] : '');
+/* Two "close" wrong answers (n±1, n±10) teach that the tens digit matters. */
+function numChoices(n, min, max) {
+  const near = shuffle([n - 1, n + 1, n - 10, n + 10, n + 2, n - 2].filter(v => v >= min && v <= max && v !== n));
+  const picks = [...new Set(near)].slice(0, 2);
+  while (picks.length < 2) { const v = min + rand(max - min + 1); if (v !== n && !picks.includes(v)) picks.push(v); }
+  return [n, ...picks];
+}
+/* Ten-frame dots: full rows of ten, then the extras. */
+const tensHTML = (n, btn = false) => { let s = '<div class="tens">'; for (let r = 0; r < Math.ceil(n / 10); r++) { s += '<div class="tenrow">'; for (let k = 0; k < Math.min(10, n - r * 10); k++) s += btn ? '<button class="dot" aria-label="Count"></button>' : '<span class="dot"></span>'; s += '</div>'; } return s + '</div>'; };
 const COUNTERS = ['🦕', '⭐', '🌸', '🍓', '🥚', '🦋', '🍎', '🐞'];
 const ABC = [['A', 'apple', '🍎'], ['B', 'bear', '🐻'], ['C', 'cat', '🐱'], ['D', 'dog', '🐶'], ['E', 'egg', '🥚'], ['F', 'fish', '🐟'], ['G', 'grapes', '🍇'], ['H', 'hat', '🎩'],
   ['I', 'ice cream', '🍦'], ['J', 'juice', '🧃'], ['K', 'kite', '🪁'], ['L', 'lion', '🦁'], ['M', 'moon', '🌙'], ['N', 'nose', '👃'], ['O', 'octopus', '🐙'], ['P', 'pig', '🐷'],
@@ -1031,8 +1075,11 @@ function runMeet(ctx, items, render, talk) {
   let i = 0;
   ctx.stage.innerHTML = `<div class="meet"><button class="card" aria-label="Hear it again"></button><button class="nextbtn" aria-label="Next">${ICON.next}</button></div>`;
   const card = $('.card', ctx.stage), nb = $('.nextbtn', ctx.stage);
-  const showIt = () => { ctx.dots(i, items.length); card.innerHTML = render(items[i]); restart(card, 'pop'); nb.classList.remove('glow'); ctx.say(talk(items[i], card)); later(() => nb.classList.add('glow'), 2200); };
-  card.addEventListener('click', () => ctx.say(talk(items[i], card)));
+  /* talk() returns either text to speak, or a function that speaks (with synced highlights) and returns the text. */
+  const doTalk = () => { const r = talk(items[i], card); if (typeof r === 'function') ctx.setSpoken(r()); else ctx.say(r); };
+  ctx.replay = doTalk;
+  const showIt = () => { ctx.dots(i, items.length); card.innerHTML = render(items[i]); restart(card, 'pop'); nb.classList.remove('glow'); clearLater(); doTalk(); later(() => nb.classList.add('glow'), 2600); };
+  card.addEventListener('click', doTalk);
   nb.addEventListener('click', () => { sfx.click(); if (++i >= items.length) { ctx.dots(i, items.length); ctx.done(); } else showIt(); });
   showIt();
 }
@@ -1061,25 +1108,29 @@ function runPick(ctx, rounds, gen) {
 }
 function runCount(ctx, rounds, min, max) {
   let r = 0, last = 0;
+  const big = max > 12;
   const next = () => {
     if (r >= rounds) return ctx.done();
     ctx.dots(r, rounds);
     let n; do { n = min + rand(max - min + 1); } while (n === last); last = n;
     const e = COUNTERS[rand(COUNTERS.length)];
-    ctx.stage.innerHTML = `<div class="count-items">${Array.from({ length: n }, () => `<button class="citem emoji" aria-label="Count">${e}</button>`).join('')}</div><div class="choices"></div>`;
-    ctx.prompt('How many? Tap each one to count.', 'How many are there? Tap each one to count.');
-    let c = 0;
-    $$('.citem', ctx.stage).forEach(it => it.addEventListener('click', () => {
+    ctx.stage.innerHTML = big
+      ? `<div class="count-badge">0</div>${tensHTML(n, true)}<div class="choices"></div>`
+      : `<div class="count-items">${Array.from({ length: n }, () => `<button class="citem emoji" aria-label="Count">${e}</button>`).join('')}</div><div class="choices"></div>`;
+    ctx.prompt(big ? 'How many dots? Tap each one to count.' : 'How many? Tap each one to count.', big ? 'How many dots are there? Tap each one to count. Each row has ten.' : 'How many are there? Tap each one to count.');
+    let c = 0; const badge = $('.count-badge', ctx.stage);
+    $$(big ? '.dot' : '.citem', ctx.stage).forEach(it => it.addEventListener('click', () => {
       if (it.classList.contains('on')) return;
-      c++; it.classList.add('on'); it.insertAdjacentHTML('beforeend', `<b>${c}</b>`); tone(SCALE[Math.min(c, 10) - 1], 0, .6, .1); speak(NUMW[c]);
+      c++; it.classList.add('on'); if (!big) it.insertAdjacentHTML('beforeend', `<b>${c}</b>`); if (badge) { badge.textContent = c; restart(badge, 'settle'); }
+      tone(SCALE[(c - 1) % 10], 0, .5, .09); speak(numWord(c));
     }));
-    const opts = [n, ...others([...Array(max).keys()].map(x => x + 1), 2, [n])];
+    const opts = big ? numChoices(n, min, max) : [n, ...others([...Array(max).keys()].map(x => x + 1), 2, [n])];
     const box = $('.choices', ctx.stage); let locked = false;
     shuffle(opts).forEach(v => {
-      const b = document.createElement('button'); b.className = 'choice'; b.textContent = v; b.setAttribute('aria-label', String(v));
+      const b = document.createElement('button'); b.className = 'choice' + (big ? ' small' : ''); b.textContent = v; b.setAttribute('aria-label', String(v));
       b.addEventListener('click', () => {
         if (locked || b.classList.contains('wrong')) return;
-        if (v === n) { locked = true; b.classList.add('right'); sfx.snap(); const [x, y] = centerOf(b); burst(x, y, 16, .5); speak(`${NUMW[n]}! ${praise()}`); r++; ctx.dots(r, rounds); later(next, 1900); }
+        if (v === n) { locked = true; b.classList.add('right'); sfx.snap(); const [x, y] = centerOf(b); burst(x, y, 16, .5); speak(`${numWord(n)}! ${praise()}`); r++; ctx.dots(r, rounds); later(next, 1900); }
         else { b.classList.add('wrong'); sfx.back(); speak('Let’s count them together. Tap each one.'); }
       });
       box.appendChild(b);
@@ -1134,16 +1185,49 @@ function runBuild(ctx, rounds) {
   };
   next();
 }
+/* Meet the numbers: "Three. Let's count. One… two… three." — each item lights as its number is spoken. */
 function countAlong(card, n) {
-  const its = $$('.row .emoji', card);
-  its.forEach((it, i) => later(() => { its.forEach(q => q.classList.remove('lit')); it.classList.add('lit'); tone(SCALE[Math.min(i, 9)], 0, .5, .08); }, 1100 + i * 700));
-  later(() => its.forEach(q => q.classList.remove('lit')), 1100 + n * 700 + 400);
+  if (n > 10) return () => {
+    /* Count by tens, then ones: "ten, twenty, twenty-one, twenty-two, twenty-three". */
+    const rows = $$('.tenrow', card), dots = $$('.dot', card), clear = () => dots.forEach(q => q.classList.remove('lit'));
+    const full = Math.floor(n / 10), extra = rows[full] ? $$('.dot', rows[full]) : [];
+    let lit = [];
+    const parts = [{ t: `${numWord(n)}.`, rate: .9, on: clear }, { t: `${full === 1 ? 'One ten' : numWord(full) + ' tens'}${n % 10 ? ' and ' + numWord(n % 10) : ''}. Let's count.`, rate: .9 }];
+    for (let k = 0; k < full; k++) parts.push({ t: numWord((k + 1) * 10), rate: .85, on: () => { lit = lit.concat($$('.dot', rows[k])); lit.forEach(q => q.classList.add('lit')); } });
+    extra.forEach((d, j) => parts.push({ t: numWord(full * 10 + j + 1), rate: .8, on: () => d.classList.add('lit') }));
+    parts.push({ t: `${numWord(n)}!`, rate: .9, on: () => dots.forEach(q => q.classList.add('lit')) });
+    syncedSay(parts);
+    return `${numWord(n)}. Let's count by tens.`;
+  };
+  return () => {
+    const its = $$('.row .emoji', card), clear = () => its.forEach(q => q.classList.remove('lit'));
+    syncedSay([
+      { t: `${NUMW[n]}.`, rate: .9, on: clear },
+      { t: 'Let’s count.', rate: .9 },
+      ...its.map((it, i) => ({ t: NUMW[i + 1], rate: .8, on: () => { clear(); it.classList.add('lit'); } })),
+      { t: `${NUMW[n]}!`, rate: .9, on: () => its.forEach(q => q.classList.add('lit')) }
+    ]);
+    return `${NUMW[n]}. Let's count. ${Array.from({ length: n }, (_, k) => NUMW[k + 1]).join(', ')}.`;
+  };
+}
+/* Meet words: "cat… C… A… T… cat!" — each letter lights as it is spoken. */
+function spellAlong(card, w) {
+  return () => {
+    const sp = $$('.letters span', card), clear = () => sp.forEach(q => q.classList.remove('lit')), all = () => sp.forEach(q => q.classList.add('lit'));
+    clear();
+    syncedSay([
+      { t: w, rate: .85, on: all },
+      ...w.split('').map((l, i) => ({ t: letterName(l), rate: .72, on: () => { clear(); sp[i].classList.add('lit'); tone(SCALE[i + 3], 0, .3, .05); } })),
+      { t: w + '!', rate: .85, on: all }
+    ]);
+    return `${w}. ${w.split('').map(letterName).join(', ')}. ${w}!`;
+  };
 }
 
 /* ---- the path ---- */
 const UNITS = [
   { id: 'shapes', name: 'Shapes', sub: 'See them, name them, match them', color: '#ff8fc2', icon: '<svg viewBox="0 0 100 100"><g fill="#fff"><path d="M28 10 L50 48 L6 48Z"/><circle cx="72" cy="30" r="19"/><rect x="32" y="58" width="36" height="34" rx="7"/></g></svg>' },
-  { id: 'numbers', name: 'Numbers', sub: 'Count from 1 to 10', color: '#ffb070', icon: '123' },
+  { id: 'numbers', name: 'Numbers', sub: 'Count from 1 to 30', color: '#ffb070', icon: '123' },
   { id: 'letters', name: 'Letters', sub: 'A to Z, big and little', color: '#5fc9b1', icon: 'ABC' },
   { id: 'time', name: 'Time', sub: 'Read the clock', color: '#6fb2ff', icon: '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="#fff" stroke-width="9"/><path d="M50 26 V50 L66 60" stroke="#fff" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
   { id: 'reading', name: 'Reading', sub: 'First words', color: '#a77be8', icon: '<svg viewBox="0 0 100 100"><path d="M10 24 C26 18 40 20 50 28 C60 20 74 18 90 24 V80 C74 74 60 76 50 84 C40 76 26 74 10 80Z" fill="#fff"/><path d="M50 28 V84" stroke="#a77be8" stroke-width="4"/></svg>' }
@@ -1157,12 +1241,18 @@ const LESSONS = [
   { id: 'sh-puzzle', unit: 'shapes', title: 'Shape puzzle', glyph: emo('🧩'), run: ctx => { let r = 0; const go = () => { if (r >= 3) return ctx.done(); ctx.dots(r, 3); ctx.prompt('Drag each shape to its home.', 'Drag each shape into the spot where it fits.'); shapePuzzle(ctx.stage, () => { r++; go(); }); }; go(); } },
   { id: 'sh-sides', unit: 'shapes', title: 'Sides and corners', glyph: emo('📐'), run: ctx => { const dk = deckOf(SIDE_QS); runPick(ctx, 5, () => { const q = dk(); return { text: q.q, say: q.q, choices: [q.ans, ...others(SH8, 2, [q.ans, ...q.not])].map(x => ({ html: pieceSVG(x), ok: x === q.ans, label: SHAPE_INFO[x][0] })), onRight: `The ${SHAPE_INFO[q.ans][0]}!` }; }); } },
   /* Numbers */
-  { id: 'nu-meet5', unit: 'numbers', title: 'Meet 1 to 5', glyph: '1–5', run: ctx => { const e = COUNTERS[rand(COUNTERS.length)]; runMeet(ctx, [1, 2, 3, 4, 5], n => `<div class="big">${n}</div><div class="row">${Array.from({ length: n }, () => emo(e)).join('')}</div>`, (n, card) => { countAlong(card, n); return `${NUMW[n]}. Let's count. ${Array.from({ length: n }, (_, i) => NUMW[i + 1]).join(', ')}.`; }); } },
+  { id: 'nu-meet5', unit: 'numbers', title: 'Meet 1 to 5', glyph: '1–5', run: ctx => { const e = COUNTERS[rand(COUNTERS.length)]; runMeet(ctx, [1, 2, 3, 4, 5], n => `<div class="big">${n}</div><div class="row">${Array.from({ length: n }, () => emo(e)).join('')}</div>`, (n, card) => countAlong(card, n)); } },
   { id: 'nu-count5', unit: 'numbers', title: 'Count to 5', glyph: emo('👆'), run: ctx => runCount(ctx, 5, 1, 5) },
   { id: 'nu-find5', unit: 'numbers', title: 'Find the number', glyph: emo('🔍'), run: ctx => { const dk = deckOf([1, 2, 3, 4, 5]); runPick(ctx, 5, () => { const n = dk(); return { text: 'Listen, then find it!', say: `Find the number ${n}.`, hint: `Try again! Find ${NUMW[n]}.`, choices: [n, ...others([1, 2, 3, 4, 5], 2, [n])].map(x => ({ html: String(x), ok: x === n, label: String(x) })) }; }); } },
-  { id: 'nu-meet10', unit: 'numbers', title: 'Meet 6 to 10', glyph: '6–10', run: ctx => { const e = COUNTERS[rand(COUNTERS.length)]; runMeet(ctx, [6, 7, 8, 9, 10], n => `<div class="big">${n}</div><div class="row">${Array.from({ length: n }, () => emo(e)).join('')}</div>`, (n, card) => { countAlong(card, n); return `${NUMW[n]}. Let's count. ${Array.from({ length: n }, (_, i) => NUMW[i + 1]).join(', ')}.`; }); } },
+  { id: 'nu-meet10', unit: 'numbers', title: 'Meet 6 to 10', glyph: '6–10', run: ctx => { const e = COUNTERS[rand(COUNTERS.length)]; runMeet(ctx, [6, 7, 8, 9, 10], n => `<div class="big">${n}</div><div class="row">${Array.from({ length: n }, () => emo(e)).join('')}</div>`, (n, card) => countAlong(card, n)); } },
   { id: 'nu-count10', unit: 'numbers', title: 'Count to 10', glyph: emo('🔢'), run: ctx => runCount(ctx, 5, 4, 10) },
   { id: 'nu-find10', unit: 'numbers', title: 'Numbers 1 to 10', glyph: emo('🎯'), run: ctx => { const all = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], dk = deckOf(all); runPick(ctx, 6, () => { const n = dk(); return { text: 'Listen, then find it!', say: `Find the number ${n}.`, hint: `Try again! Find ${NUMW[n]}.`, choices: [n, ...others(all, 2, [n])].map(x => ({ html: String(x), ok: x === n, label: String(x) })) }; }); } },
+  { id: 'nu-meet20', unit: 'numbers', title: 'Meet 11 to 20', glyph: '11–20', run: ctx => runMeet(ctx, [11, 12, 13, 14, 15, 16, 17, 18, 19, 20], n => `<div class="big">${n}</div>${tensHTML(n)}`, (n, card) => countAlong(card, n)) },
+  { id: 'nu-count20', unit: 'numbers', title: 'Count to 20', glyph: emo('👆'), run: ctx => runCount(ctx, 4, 11, 20) },
+  { id: 'nu-find20', unit: 'numbers', title: 'Numbers 11 to 20', glyph: emo('🔍'), run: ctx => { const all = Array.from({ length: 10 }, (_, i) => i + 11), dk = deckOf(all); runPick(ctx, 6, () => { const n = dk(); return { text: 'Listen, then find it!', say: `Find the number ${numWord(n)}.`, hint: `Try again! Find ${numWord(n)}.`, choiceClass: 'small', choices: numChoices(n, 1, 20).map(x => ({ html: String(x), ok: x === n, label: String(x) })) }; }); } },
+  { id: 'nu-meet30', unit: 'numbers', title: 'Meet 21 to 30', glyph: '21–30', run: ctx => runMeet(ctx, [21, 22, 23, 24, 25, 26, 27, 28, 29, 30], n => `<div class="big">${n}</div>${tensHTML(n)}`, (n, card) => countAlong(card, n)) },
+  { id: 'nu-count30', unit: 'numbers', title: 'Count to 30', glyph: emo('🔢'), run: ctx => runCount(ctx, 4, 18, 30) },
+  { id: 'nu-find30', unit: 'numbers', title: 'Numbers 1 to 30', glyph: emo('🏆'), run: ctx => { const all = Array.from({ length: 30 }, (_, i) => i + 1), dk = deckOf(all); runPick(ctx, 8, () => { const n = dk(); return { text: 'Listen, then find it!', say: `Find the number ${numWord(n)}.`, hint: `Try again! Find ${numWord(n)}.`, choiceClass: 'small', choices: numChoices(n, 1, 30).map(x => ({ html: String(x), ok: x === n, label: String(x) })) }; }); } },
   /* Letters */
   ...[['le-ah', 'Meet A to H', 0, 8], ['le-ip', 'Meet I to P', 8, 16], ['le-qz', 'Meet Q to Z', 16, 26]].flatMap(([id, title, a, b], gi) => {
     const set = ABC.slice(a, b), meet = { id, unit: 'letters', title, glyph: `${set[0][0]}–${set[set.length - 1][0]}`, run: ctx => runMeet(ctx, set, ([L, w, e]) => `<div class="big">${L}${L.toLowerCase()}</div>${emo(e, 'big-e')}<div class="cap">${L} is for ${w}</div>`, ([L, w]) => `${letterName(L)} is for ${w}.`) };
@@ -1177,9 +1267,7 @@ const LESSONS = [
   { id: 'ti-set', unit: 'time', title: 'Set the clock', glyph: emo('✋'), run: ctx => runSetClock(ctx, 4) },
   { id: 'ti-half', unit: 'time', title: 'Half past', glyph: emo('🕧'), run: ctx => { const dk = deckOf([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]); runPick(ctx, 5, () => { const h = dk(), hrs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; return { show: clockSVG(h, 30), text: 'Long hand on 6 means half past. What time is it?', say: 'When the long hand points to six, it is half past. What time is it?', choiceClass: 'small', choices: [`${h}:30`, ...others(hrs, 2, [h]).map(x => `${x}:30`)].map((t, i) => ({ html: t, ok: i === 0, label: t })), onRight: `Half past ${NUMW[h]}!` }; }); } },
   /* Reading */
-  { id: 're-meet', unit: 'reading', title: 'Meet words', glyph: emo('👀'), run: ctx => runMeet(ctx, shuffle(WORDS.slice(0, 10)).slice(0, 6), ([w, e]) => `${emo(e, 'big-e')}<div class="big letters">${w.split('').map(l => `<span>${l}</span>`).join('')}</div>`, ([w], card) => {
-      const sp = $$('.letters span', card); sp.forEach((s, i) => later(() => { sp.forEach(q => q.classList.remove('lit')); s.classList.add('lit'); }, 700 + i * 650)); later(() => sp.forEach(q => q.classList.add('lit')), 700 + sp.length * 650 + 300);
-      return `${w}. ${w.split('').map(letterName).join(', ')}. ${w}!`; }) },
+  { id: 're-meet', unit: 'reading', title: 'Meet words', glyph: emo('👀'), run: ctx => runMeet(ctx, shuffle(WORDS.slice(0, 10)).slice(0, 6), ([w, e]) => `${emo(e, 'big-e')}<div class="big letters">${w.split('').map(l => `<span>${l}</span>`).join('')}</div>`, ([w], card) => spellAlong(card, w)) },
   { id: 're-find', unit: 'reading', title: 'Find the word', glyph: emo('🔍'), run: ctx => { const pool = WORDS.slice(0, 12), dk = deckOf(pool); runPick(ctx, 5, () => { const [w, e] = dk(); return { show: emo(e), text: 'Which word matches the picture?', say: 'Which word matches the picture?', choiceClass: 'word', choices: [[w, e], ...others(pool, 2, pool.filter(p => p[0] === w))].map(([w2]) => ({ html: w2, ok: w2 === w, label: w2 })), onRight: `${w}!` }; }); } },
   { id: 're-build', unit: 'reading', title: 'Build the word', glyph: emo('✏️'), run: ctx => runBuild(ctx, 4) },
   { id: 're-read', unit: 'reading', title: 'Read it!', glyph: emo('📖'), run: ctx => { const pool = WORDS.slice(0, 14), dk = deckOf(pool); runPick(ctx, 5, () => { const [w, e] = dk(); return { show: w, showClass: 'word', text: 'Read the word. Find the picture.', say: 'Read the word. Then find the picture.', hint: 'Try again! Sound it out.', choices: [[w, e], ...others(pool, 2, pool.filter(p => p[0] === w))].map(([w2, e2]) => ({ html: emo(e2), ok: w2 === w, label: w2 })), onRight: `${w}!` }; }); } }
@@ -1198,7 +1286,7 @@ function showMap(unitId, finishedId) {
   body.innerHTML = `<div class="learn-map">
     <div class="unit-tabs">${UNITS.map(u => { const all = LESSONS.filter(l => l.unit === u.id), dn = all.filter(l => learn.done[l.id]).length; return `<button class="utab ${u.id === uid ? 'on' : ''}" data-u="${u.id}" style="--c:${u.color}" aria-label="${u.name}">${u.icon}<span class="prog">${dn}/${all.length}</span></button>`; }).join('')}</div>
     <div class="unit-title">${U.name}</div><div class="unit-sub">${U.sub}</div>
-    <div class="stones">${ls.map(l => `<button class="stone ${nx && nx.id === l.id ? 'next' : ''}" data-l="${l.id}" aria-label="${l.title}"><div class="disc" style="--c:${U.color}">${l.glyph}${learn.done[l.id] ? '<svg class="badge"><use href="#star"/></svg>' : ''}</div><span class="label">${l.title}</span>${nx && nx.id === l.id ? '<svg class="here dino" viewBox="0 0 230 200"><use href="#dino"/></svg>' : ''}</button>`).join('')}</div>
+    <div class="stones ${ls.length > 8 ? 'many' : ''}">${ls.map(l => `<button class="stone ${nx && nx.id === l.id ? 'next' : ''}" data-l="${l.id}" aria-label="${l.title}"><div class="disc" style="--c:${U.color}">${l.glyph}${learn.done[l.id] ? '<svg class="badge"><use href="#star"/></svg>' : ''}</div><span class="label">${l.title}</span>${nx && nx.id === l.id ? '<svg class="here dino" viewBox="0 0 230 200"><use href="#dino"/></svg>' : ''}</button>`).join('')}</div>
   </div><button class="voicebtn" aria-label="Choose the voice">${ICON.speak}<span>Voice</span></button>`;
   $('.voicebtn', body).addEventListener('click', () => { sfx.click(); voicePanel(); });
   $$('.utab', body).forEach(b => b.addEventListener('click', () => { sfx.click(); showMap(b.dataset.u); speak(UNITS.find(u => u.id === b.dataset.u).name); }));
@@ -1212,6 +1300,8 @@ function openLesson(L) {
     stage: $('.stage', body),
     prompt(text, say) { $('.prompt', body).textContent = text; spoken = (typeof say === 'string' && say) ? say : text; speak(spoken); },
     say(text) { spoken = text; speak(text); },
+    setSpoken(text) { spoken = text; },
+    replay: null,
     dots(i, n) { const d = $('.dots', body); if (d.children.length !== n) d.innerHTML = '<i></i>'.repeat(n); [...d.children].forEach((c, j) => c.classList.toggle('on', j < i)); },
     done() {
       learn.done[L.id] = true; saveLearn(); markDone('learn');
@@ -1221,7 +1311,7 @@ function openLesson(L) {
   };
   $('.prompt', body).textContent = L.title;
   $('#lBack').addEventListener('click', () => { hush(); sfx.click(); showMap(L.unit); });
-  $('#lSay').addEventListener('click', () => speak(spoken));
+  $('#lSay').addEventListener('click', () => { if (ctx.replay) ctx.replay(); else speak(spoken); });
   L.run(ctx);
 }
 build.learn = () => { lullPaused = true; showMap(); cleanup = () => hush(); };
