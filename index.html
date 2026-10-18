@@ -241,7 +241,9 @@ button:focus-visible{outline:4px solid var(--gold);outline-offset:4px}
 .gcard .badge{position:absolute;top:-10px;right:-10px;width:44px;height:44px;filter:drop-shadow(0 4px 8px rgba(20,6,38,.4))}
 .gcard:active{transform:scale(.96)}
 .gcard .gtag{position:absolute;top:-12px;left:-10px;font-size:30px;filter:drop-shadow(0 3px 5px rgba(20,6,38,.45))}
-.gallery{overflow-y:auto;touch-action:pan-y;padding:12px 6px}
+.gallery{overflow-y:auto;touch-action:pan-y;padding:12px 6px 40px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.gallery .gcard{touch-action:pan-y}
+.gallery .gcard *{pointer-events:none}
 .cbn{display:flex;flex-direction:column;align-items:center;gap:1.4vh;width:100%;height:100%}
 .cbn-top{display:flex;align-items:center;gap:12px;flex:none}
 .cbn-pct{min-width:84px;text-align:center;font-weight:700;font-size:20px;font-variant-numeric:tabular-nums}
@@ -2266,7 +2268,7 @@ function openCBN(pic) {
   }
   /* zoom + pan */
   let B = 0, z = 1, tx = 0, ty = 0, vw = 0, vh = 0;
-  const apply = (anim) => { inner.style.transition = anim ? 'transform .45s cubic-bezier(.3,1,.4,1)' : 'none'; inner.style.transform = `translate(${tx}px,${ty}px) scale(${z})`; };
+  const apply = (anim) => { inner.style.transition = anim ? 'transform .45s cubic-bezier(.3,1,.4,1)' : 'none'; inner.style.transform = `translate3d(${tx}px,${ty}px,0) scale(${z})`; };
   const clampPan = () => { const W = B * z; tx = W <= vw ? (vw - W) / 2 : Math.min(60, Math.max(vw - W - 60, tx)); ty = W <= vh ? (vh - W) / 2 : Math.min(60, Math.max(vh - W - 60, ty)); };
   function layout() { const r = view.getBoundingClientRect(); vw = r.width; vh = r.height; const nb = Math.min(vw, vh) - 16; if (B && nb !== B) { tx *= nb / B; ty *= nb / B; } B = nb; inner.style.width = inner.style.height = B + 'px'; clampPan(); apply(); }
   function zoomAt(px, py, nz, anim) { nz = Math.max(1, Math.min(9, nz)); const ix = (px - tx) / z, iy = (py - ty) / z; z = nz; tx = px - ix * z; ty = py - iy * z; clampPan(); apply(anim); }
@@ -2281,16 +2283,38 @@ function openCBN(pic) {
     const l = labels[bi]; if (l) restart(l, 'pulse'); sfx.chime();
   });
   const regionAt = (x, y) => { const el = document.elementFromPoint(x, y); return el && el.tagName === 'path' && el.dataset.i != null && svg.contains(el) ? +el.dataset.i : -1; };
-  const pts = new Map(); let mode = null, start = null, pinch = null;
+  /* Touch model (like Happy Color):
+     zoomed in  → drag moves the picture (with a glide), tap fills, press-and-hold then drag fills many
+     zoomed out → drag fills many, tap fills
+     two fingers → pinch to zoom and move */
+  const pts = new Map(); let mode = null, start = null, pinch = null, holdT = null, vel = { x: 0, y: 0 }, lastMv = null, glide = 0;
+  const canFill = i => i >= 0 && regs[i] && !regs[i].decor && !filled.has(i) && regs[i].num === sel;
+  const stopGlide = () => { cancelAnimationFrame(glide); glide = 0; };
+  function startGlide() {
+    let vx = vel.x, vy = vel.y, last = performance.now();
+    if (Math.hypot(vx, vy) < .25) return;
+    const stepG = now => {
+      const dt = Math.min(32, now - last); last = now;
+      tx += vx * dt; ty += vy * dt; const ox = tx, oy = ty; clampPan(); if (ox !== tx) vx = 0; if (oy !== ty) vy = 0; apply();
+      const f = Math.pow(.93, dt / 16); vx *= f; vy *= f;
+      glide = Math.hypot(vx, vy) > .02 ? requestAnimationFrame(stepG) : 0;
+    };
+    glide = requestAnimationFrame(stepG);
+  }
+  const paintUnder = e => (e.getCoalescedEvents ? e.getCoalescedEvents() : [e]).forEach(ev => { const i = regionAt(ev.clientX, ev.clientY); if (canFill(i)) fillAt(i); });
   view.addEventListener('pointerdown', e => {
     if (e.target.closest('.cbn-tools')) return;
-    e.preventDefault(); try { view.setPointerCapture(e.pointerId); } catch (er) {}
+    e.preventDefault(); stopGlide(); try { view.setPointerCapture(e.pointerId); } catch (er) {}
     const vr = view.getBoundingClientRect(); pts.set(e.pointerId, { x: e.clientX - vr.left, y: e.clientY - vr.top, cx: e.clientX, cy: e.clientY });
+    clearTimeout(holdT);
     if (pts.size === 1) {
-      start = { x: e.clientX, y: e.clientY, tx, ty, moved: false };
-      const i = regionAt(e.clientX, e.clientY);
-      mode = i >= 0 && regs[i] && !regs[i].decor && !filled.has(i) && regs[i].num === sel ? 'paint' : 'pan';
-      if (mode === 'paint') fillAt(i);
+      start = { x: e.clientX, y: e.clientY, tx, ty, moved: false, i: regionAt(e.clientX, e.clientY) };
+      vel = { x: 0, y: 0 }; lastMv = { x: e.clientX, y: e.clientY, t: performance.now() };
+      if (z <= 1.02) { mode = 'paint'; if (canFill(start.i)) { fillAt(start.i); start.did = true; } }
+      else {
+        mode = 'pending';
+        holdT = setTimeout(() => { if (mode === 'pending') { mode = 'paint'; if (canFill(start.i)) { fillAt(start.i); start.did = true; } try { navigator.vibrate && navigator.vibrate(12); } catch (er) {} } }, 330);
+      }
     } else if (pts.size === 2) {
       const [a, b] = [...pts.values()]; mode = 'pinch';
       pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2, z, tx, ty };
@@ -2303,22 +2327,29 @@ function openCBN(pic) {
       const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
       const nz = Math.max(1, Math.min(9, pinch.z * d / pinch.d)), ix = (pinch.mx - pinch.tx) / pinch.z, iy = (pinch.my - pinch.ty) / pinch.z;
       z = nz; tx = mx - ix * z; ty = my - iy * z; clampPan(); apply();
-    } else if (mode === 'pan') {
-      const dx = e.clientX - start.x, dy = e.clientY - start.y;
-      if (!start.moved && Math.hypot(dx, dy) > 9) start.moved = true;
-      if (start.moved && z > 1.01) { tx = start.tx + dx; ty = start.ty + dy; clampPan(); apply(); }
-    } else if (mode === 'paint') {
-      (e.getCoalescedEvents ? e.getCoalescedEvents() : [e]).forEach(ev => { const i = regionAt(ev.clientX, ev.clientY); if (i >= 0) fillAt(i); });
+      return;
     }
+    const dx = e.clientX - start.x, dy = e.clientY - start.y;
+    if (!start.moved && Math.hypot(dx, dy) > 8) start.moved = true;
+    if (mode === 'pending' && start.moved) { clearTimeout(holdT); mode = 'pan'; start.x = e.clientX; start.y = e.clientY; start.tx = tx; start.ty = ty; }
+    if (mode === 'pan') {
+      tx = start.tx + (e.clientX - start.x); ty = start.ty + (e.clientY - start.y); clampPan(); apply();
+      const now = performance.now(), dt = Math.max(1, now - lastMv.t);
+      vel = { x: vel.x * .6 + (e.clientX - lastMv.x) / dt * .4, y: vel.y * .6 + (e.clientY - lastMv.y) / dt * .4 }; lastMv = { x: e.clientX, y: e.clientY, t: now };
+    } else if (mode === 'paint') paintUnder(e);
   });
   const end = e => {
     if (!pts.has(e.pointerId)) return;
-    if (mode === 'pan' && start && !start.moved && pts.size === 1) {
-      const i = regionAt(e.clientX, e.clientY);
-      if (i >= 0 && regs[i] && !regs[i].decor && !filled.has(i)) { if (!fillAt(i)) { const b = sws[regs[i].num]; restart(b, 'hint'); tone(SCALE[1], 0, .2, .05); } }
+    clearTimeout(holdT);
+    if (pts.size === 1 && start && !start.moved && !start.did && (mode === 'pending' || mode === 'paint')) {
+      const i = start.i;
+      if (i >= 0 && regs[i] && !regs[i].decor && !filled.has(i)) {
+        if (canFill(i)) fillAt(i); else { const b = sws[regs[i].num]; restart(b, 'hint'); tone(SCALE[1], 0, .2, .05); }
+      }
     }
+    if (mode === 'pan' && pts.size === 1 && performance.now() - lastMv.t < 90) startGlide();
     pts.delete(e.pointerId);
-    if (pts.size === 1 && mode === 'pinch') { const [a] = [...pts.values()]; mode = 'pan'; start = { x: a.cx, y: a.cy, tx, ty, moved: true }; }
+    if (pts.size === 1 && mode === 'pinch') { const [a] = [...pts.values()]; mode = 'pan'; start = { x: a.cx, y: a.cy, tx, ty, moved: true, i: -1 }; lastMv = { x: a.cx, y: a.cy, t: performance.now() }; vel = { x: 0, y: 0 }; }
     else if (pts.size === 0) mode = null;
   };
   view.addEventListener('pointerup', end); view.addEventListener('pointercancel', end);
@@ -2326,7 +2357,7 @@ function openCBN(pic) {
   $('#cBack', body).addEventListener('click', () => { sfx.click(); st.f = [...filled]; store.set('lydia-cbn', cbnSave); artHome(); });
   const onResize = () => layout();
   addEventListener('resize', onResize);
-  artCleanup = () => { removeEventListener('resize', onResize); clearTimeout(saveT); st.f = [...filled]; store.set('lydia-cbn', cbnSave); };
+  artCleanup = () => { removeEventListener('resize', onResize); clearTimeout(saveT); clearTimeout(holdT); stopGlide(); st.f = [...filled]; store.set('lydia-cbn', cbnSave); };
   layout(); paintSel(); updPct();
   if (st.done) { palEl.style.visibility = 'hidden'; $('.cbn-tools', body).style.visibility = 'hidden'; paths.forEach(pth => { const r = regs[+pth.dataset.i]; pth.setAttribute('fill', r.c); pth.setAttribute('stroke', 'none'); }); Object.values(labels).forEach(l => l.setAttribute('display', 'none')); pctEl.textContent = '100%'; }
 }
