@@ -155,6 +155,18 @@ button:focus-visible{outline:4px solid var(--gold);outline-offset:4px}
 .stone .here{position:absolute;top:-14%;left:-30%;width:54%;animation:float 2.4s ease-in-out infinite;pointer-events:none}
 .stone:active .disc{transform:scale(.93)}
 @keyframes ring{0%,100%{box-shadow:0 14px 26px rgba(20,6,38,.4),0 0 0 6px rgba(255,210,122,.55)}50%{box-shadow:0 14px 26px rgba(20,6,38,.4),0 0 0 15px rgba(255,210,122,.12)}}
+.voicebtn{position:fixed;z-index:29;right:max(18px,calc(env(safe-area-inset-right,0px) + 18px));bottom:calc(env(safe-area-inset-bottom,0px) + 18px);display:flex;align-items:center;gap:8px;height:48px;padding:0 16px 0 12px;border-radius:999px;font-weight:600;font-size:16px;
+  background:var(--glass);border:2px solid var(--glass-edge);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.voicebtn svg{width:26px;height:26px}
+.voice-ov{position:fixed;inset:0;z-index:80;display:grid;place-items:center;background:rgba(30,12,50,.55);padding:20px}
+.voice-panel{width:min(460px,100%);max-height:86vh;display:flex;flex-direction:column;gap:12px;padding:22px;background:rgba(58,35,99,.92)}
+.vp-title{font-size:26px;font-weight:700}
+.vp-sub{font-size:15px;opacity:.85;line-height:1.3}
+.vp-list{display:flex;flex-direction:column;gap:8px;overflow-y:auto}
+.vp-row{text-align:left;padding:14px 16px;border-radius:16px;background:rgba(255,247,243,.1);border:2px solid rgba(255,247,243,.2);font-size:17px;font-weight:500}
+.vp-row b{margin-left:6px;padding:2px 8px;border-radius:999px;background:var(--gold);color:var(--plum-deep);font-size:12px;vertical-align:2px}
+.vp-row.on{background:var(--cream);color:var(--plum-deep);border-color:var(--cream)}
+.vp-done{align-self:center;height:50px;padding:0 34px;border-radius:999px;background:var(--gold);color:var(--plum-deep);font-weight:700;font-size:18px}
 .lesson{display:flex;flex-direction:column;align-items:center;gap:2.2vh;width:100%;height:100%}
 .lesson-top{display:flex;align-items:center;gap:14px;flex:none}
 .lbtn{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:var(--glass);border:2px solid var(--glass-edge);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
@@ -927,20 +939,47 @@ function shapePuzzle(host, onRoundDone) {
 }
 
 /* ---------------- Learn path: Shapes → Numbers → Letters → Time → Reading ---------------- */
+/* Voices: rank what this device offers. A real child voice (Microsoft Ana, in Edge) wins; natural/enhanced voices next; novelty voices are skipped. */
 let voice = null;
+const isKidVoice = v => !!v && /\bAna\b/.test(v.name);
+function rankVoice(v) {
+  if (!/^en/i.test(v.lang)) return -999;
+  const n = v.name; let s = 0;
+  if (/\bAna\b/.test(n)) s += 120;
+  if (/Natural|Neural|Enhanced|Premium/i.test(n)) s += 45;
+  if (/Online/i.test(n)) s += 15;
+  if (/\b(Zoe|Ava|Samantha|Allison|Aria|Jenny|Joelle|Noelle|Susan|Karen|Moira|Tessa|Nicky|Libby|Sonia|Michelle|Emma)\b/.test(n)) s += 25;
+  if (/Google US English|Google UK English Female/.test(n)) s += 22;
+  if (v.lang === 'en-US') s += 8;
+  if (/Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Wobble|Whisper|Zarvox|Trinoids|Organ|Jester|Junior|Ralph|Kathy|Princess|Superstar|Grandma|Grandpa|Albert|Fred|Hysterical|Deranged|Good News|Pipe/i.test(n)) s -= 300;
+  if (/\b(David|Mark|Zira|George|Hazel)\b/.test(n)) s -= 20;
+  return s;
+}
+const englishVoices = () => { try { return speechSynthesis.getVoices().filter(v => rankVoice(v) > -100).sort((a, b) => rankVoice(b) - rankVoice(a)); } catch (e) { return []; } };
 function pickVoice() {
-  try {
-    const vs = speechSynthesis.getVoices(), pref = ['Samantha', 'Ava', 'Allison', 'Karen', 'Moira', 'Tessa', 'Google US English', 'Microsoft Aria', 'Microsoft Jenny'];
-    voice = pref.map(n => vs.find(v => v.name.startsWith(n))).find(Boolean) || vs.find(v => v.lang === 'en-US') || vs.find(v => /^en/i.test(v.lang)) || null;
-  } catch (e) {}
+  const vs = englishVoices(), saved = store.get('lydia-voice', null);
+  voice = (saved && vs.find(v => v.name === saved)) || vs[0] || null;
 }
 try { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; } catch (e) {}
 function speak(text, cancel = true) {
   try {
     const s = window.speechSynthesis; if (!s || !text) return;
     if (cancel) s.cancel();
-    const u = new SpeechSynthesisUtterance(text); u.lang = 'en-US'; if (voice) u.voice = voice; u.rate = .88; u.pitch = 1.12; s.speak(u);
+    const u = new SpeechSynthesisUtterance(text); u.lang = 'en-US';
+    if (voice) u.voice = voice;
+    if (isKidVoice(voice)) { u.rate = .95; u.pitch = 1.05; } else { u.rate = .92; u.pitch = 1.25; }
+    s.speak(u);
   } catch (e) {}
+}
+function voicePanel() {
+  const vs = englishVoices().slice(0, 10);
+  const ov = document.createElement('div'); ov.className = 'voice-ov';
+  ov.innerHTML = `<div class="voice-panel panel"><div class="vp-title">Pick a voice</div><div class="vp-sub">Tap one to hear it. The best ones say Natural, Enhanced or Premium.</div><div class="vp-list">${vs.length ? vs.map((v, i) => `<button class="vp-row ${voice && v.name === voice.name ? 'on' : ''}" data-i="${i}">${v.name.replace(/Microsoft |Google /, '').replace(/ - English.*| \(English.*\)/, '')}${isKidVoice(v) ? ' <b>kid voice</b>' : ''}</button>`).join('') : '<div class="vp-sub">No English voices found on this device.</div>'}</div><button class="vp-done">Done</button></div>`;
+  document.body.appendChild(ov);
+  $$('.vp-row', ov).forEach(b => b.addEventListener('click', () => { voice = vs[+b.dataset.i]; store.set('lydia-voice', voice.name); $$('.vp-row', ov).forEach(q => q.classList.toggle('on', q === b)); speak('Hi Lydia! Let’s learn together!'); }));
+  const close = () => ov.remove();
+  $('.vp-done', ov).addEventListener('click', close);
+  ov.addEventListener('click', e => { if (e.target === ov) close(); });
 }
 const hush = () => { try { speechSynthesis.cancel(); } catch (e) {} };
 const PRAISE = ['Great job!', 'You did it!', 'Yes! That’s right!', 'Wonderful!', 'Super, Lydia!', 'Way to go!', 'Perfect!', 'You’re so smart!'];
@@ -1158,7 +1197,8 @@ function showMap(unitId, finishedId) {
     <div class="unit-tabs">${UNITS.map(u => { const all = LESSONS.filter(l => l.unit === u.id), dn = all.filter(l => learn.done[l.id]).length; return `<button class="utab ${u.id === uid ? 'on' : ''}" data-u="${u.id}" style="--c:${u.color}" aria-label="${u.name}">${u.icon}<span class="prog">${dn}/${all.length}</span></button>`; }).join('')}</div>
     <div class="unit-title">${U.name}</div><div class="unit-sub">${U.sub}</div>
     <div class="stones">${ls.map(l => `<button class="stone ${nx && nx.id === l.id ? 'next' : ''}" data-l="${l.id}" aria-label="${l.title}"><div class="disc" style="--c:${U.color}">${l.glyph}${learn.done[l.id] ? '<svg class="badge"><use href="#star"/></svg>' : ''}</div><span class="label">${l.title}</span>${nx && nx.id === l.id ? '<svg class="here dino" viewBox="0 0 230 200"><use href="#dino"/></svg>' : ''}</button>`).join('')}</div>
-  </div>`;
+  </div><button class="voicebtn" aria-label="Choose the voice">${ICON.speak}<span>Voice</span></button>`;
+  $('.voicebtn', body).addEventListener('click', () => { sfx.click(); voicePanel(); });
   $$('.utab', body).forEach(b => b.addEventListener('click', () => { sfx.click(); showMap(b.dataset.u); speak(UNITS.find(u => u.id === b.dataset.u).name); }));
   $$('.stone', body).forEach(b => b.addEventListener('click', () => { sfx.chime(); openLesson(LESSONS.find(l => l.id === b.dataset.l)); }));
 }
