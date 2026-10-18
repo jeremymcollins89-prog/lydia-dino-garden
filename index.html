@@ -1165,7 +1165,7 @@ const LESSONS = [
   { id: 'nu-find10', unit: 'numbers', title: 'Numbers 1 to 10', glyph: emo('🎯'), run: ctx => { const all = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], dk = deckOf(all); runPick(ctx, 6, () => { const n = dk(); return { text: 'Listen, then find it!', say: `Find the number ${n}.`, hint: `Try again! Find ${NUMW[n]}.`, choices: [n, ...others(all, 2, [n])].map(x => ({ html: String(x), ok: x === n, label: String(x) })) }; }); } },
   /* Letters */
   ...[['le-ah', 'Meet A to H', 0, 8], ['le-ip', 'Meet I to P', 8, 16], ['le-qz', 'Meet Q to Z', 16, 26]].flatMap(([id, title, a, b], gi) => {
-    const set = ABC.slice(a, b), meet = { id, unit: 'letters', title, glyph: `${set[0][0]}–${set[set.length - 1][0]}`, run: ctx => runMeet(ctx, set, ([L, w, e]) => `<div class="big">${L}${L.toLowerCase()}</div>${emo(e, 'big-e')}<div class="cap">${L} is for ${w}</div>`, ([L, w]) => `${letterName(L)}. ${letterName(L)} is for ${w}.`) };
+    const set = ABC.slice(a, b), meet = { id, unit: 'letters', title, glyph: `${set[0][0]}–${set[set.length - 1][0]}`, run: ctx => runMeet(ctx, set, ([L, w, e]) => `<div class="big">${L}${L.toLowerCase()}</div>${emo(e, 'big-e')}<div class="cap">${L} is for ${w}</div>`, ([L, w]) => `${letterName(L)} is for ${w}.`) };
     const find = { id: id + '-find', unit: 'letters', title: `Find ${set[0][0]} to ${set[set.length - 1][0]}`, glyph: emo('🔍'), run: ctx => { const pool = set.map(s => s[0]), dk = deckOf(pool); runPick(ctx, 5, () => { const L = dk(); return { text: 'Listen, then find the letter!', say: `Find the letter ${letterName(L)}.`, hint: `Try again! Find ${letterName(L)}.`, choices: [L, ...others(pool, 2, [L])].map(x => ({ html: x, ok: x === L, label: x })) }; }); } };
     return [meet, find];
   }),
