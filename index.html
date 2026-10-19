@@ -1024,14 +1024,14 @@ function askPotty() {
   const ov = $('#potty'); ov.hidden = false; lullPaused = true;
   ['#pottyYes', '#pottyLater'].forEach(id => $(id).disabled = true);
   sfx.chime(); setTimeout(() => sfx.giggle(), 450);
-  setTimeout(() => speak(`Hey${nm(' ')}! Do you need to go potty?`), 700);
+  setTimeout(() => speak(`Hey${nm(' ')}! Do you need to go potty?`, true), 700);
   /* Buttons wake up after a moment so a stray tap doesn't dismiss it. */
   setTimeout(() => { ['#pottyYes', '#pottyLater'].forEach(id => $(id).disabled = false); $('#pottyYes').classList.add('ready'); }, 1800);
 }
 function closePotty(msg) {
   potty.played = 0; savePotty();
   $('#pottyYes').classList.remove('ready');
-  speak(msg);
+  speak(msg, true);
   setTimeout(() => { $('#potty').hidden = true; pottyOpen = false; lullPaused = current !== null && ['music', 'learn', 'build'].includes(current); }, 2600);
 }
 $('#pottyYes').addEventListener('click', () => {
@@ -1064,7 +1064,7 @@ const PG_FLOWER_COLS = [['#ff8fc2', '#ffd27a'], ['#ffd27a', '#ff6b6b'], ['#b48cf
 const pgFlower = () => { const [a, b] = PG_FLOWER_COLS[rand(PG_FLOWER_COLS.length)]; return `<svg viewBox="0 0 100 100">${FLOWERS[['daisy', 'round', 'tulip'][rand(3)]](a, b)}</svg>`; };
 const PG_SPARK = '<svg viewBox="0 0 100 100"><use href="#star"/></svg>';
 function pgBoxStyle(ship) { const u = 100 / PG.N; return `left:${ship.c * u}%;top:${ship.r * u}%;width:${(ship.h ? ship.len : 1) * u}%;height:${(ship.h ? 1 : ship.len) * u}%`; }
-function pgStatus(text, say) { $('#pgStatus').textContent = text; if (say) speak(say === true ? text : say); }
+function pgStatus(text, say, now = false) { $('#pgStatus').textContent = text; if (say) speak(say === true ? text : say, now); }
 function openPottyGame() {
   const ov = $('#pgame'); ov.hidden = false; pottyOpen = true; lullPaused = true;
   pg = { endAt: Date.now() + PG.MINUTES * 60000, timers: [], over: false };
@@ -1115,8 +1115,8 @@ function pgKidTap(i, el) {
   if (!res.hit) { tone(SCALE[2 + rand(4)], 0, .5, .09); pgSetTurn(false); pgLater(pgBuddyTurn, 1300); return; }
   const [x, y] = centerOf(el);
   if (res.all) { burst(x, y, 60, 1.2); return pgWin(true, res.ship); }
-  if (res.sunk) { sfx.giggle(); burst(x, y, 40, 1); pgStatus(`You found my ${res.ship.name}!`, true); pg.kidTurn = false; $('#pgThem').classList.remove('active'); pgLater(() => { pgSetTurn(false); pgBuddyTurn(); }, 2600); }
-  else { sfx.snap(); burst(x, y, 14, .5); pgStatus('A dino is hiding there!', true); pg.kidTurn = false; $('#pgThem').classList.remove('active'); pgLater(() => { pgSetTurn(false); pgLater(pgBuddyTurn, 900); }, 1600); }
+  if (res.sunk) { sfx.giggle(); burst(x, y, 40, 1); pgStatus(`You found my ${res.ship.name}!`, true, true); pg.kidTurn = false; $('#pgThem').classList.remove('active'); pgLater(() => { pgSetTurn(false); pgBuddyTurn(); }, 2600); }
+  else { sfx.snap(); burst(x, y, 14, .5); pgStatus('A dino is hiding there!', true, true); pg.kidTurn = false; $('#pgThem').classList.remove('active'); pgLater(() => { pgSetTurn(false); pgLater(pgBuddyTurn, 900); }, 1600); }
 }
 function pgBuddyTurn() {
   if (!pg || pg.over) return;
@@ -1163,7 +1163,7 @@ function pgClose() {
 }
 $('#pgDone').addEventListener('click', () => { sfx.click(); pgFinish(); });
 $('#pottyLater').addEventListener('click', () => { sfx.click(); closePotty('Okay! I\u2019ll ask you again later.'); });
-$('#buddy').addEventListener('click', () => { if (lastSaid) lastSaid(); else speak('Hi! I\u2019m here to help.'); });
+$('#buddy').addEventListener('click', () => { if (lastSaid) lastSaid(); else speak('Hi! I\u2019m here to help.', true); });
 addEventListener('resize', () => { if ($('#bubble').classList.contains('saying')) placeBubble(); });
 function refreshHub() { $$('.portal').forEach(p => p.classList.toggle('done', done.has(p.dataset.room))); }
 function markDone(room) { if (!done.has(room)) { done.add(room); $('#roomStar').classList.add('show'); tone(SCALE[9], .3, 1.4, .1); } }
@@ -1175,7 +1175,7 @@ $('#hubDino').addEventListener('pointerdown', e => {
   const [x, y] = centerOf(d); burst(x, y - 40, 10, .5);
   setTimeout(() => { d.classList.remove('hop'); d.classList.add('breathe'); }, 600);
   const lines = [`Hi${nm(' ')}! I\u2019m your dino friend!`, 'Where should we go today?', 'Tap a circle to pick a game!', 'Rawr! That tickles!', `I love playing with you${nm()}!`];
-  setTimeout(() => speak(lines[rand(lines.length)]), 350);
+  setTimeout(() => speak(lines[rand(lines.length)], true), 350);
 });
 /* First tap on the home screen: the dino says hello. */
 let greeted = false;
@@ -1325,36 +1325,54 @@ function utter(text, rateMul = 1) {
   return u;
 }
 let lastSaid = null;
-function speak(text, cancel = true) {
-  try {
-    const s = window.speechSynthesis; if (!s || !text) return;
-    if (cancel) s.cancel();
-    const u = utter(text);
-    u.onstart = () => buddyTalk(text); u.onend = u.onerror = () => buddyQuiet();
-    buddyTalk(text, true);
-    lastSaid = () => speak(text);
+/* Speech queue: automatic lines wait for the current sentence to finish; only the child's own taps interrupt.
+   One sentence plays at a time; if several are waiting, the newest wins. Each utterance is kept referenced
+   while it plays (browsers can cut off speech whose utterance object gets cleaned up). */
+const sayQ = []; let sayCur = null, sayWatch = null, sayKeep = [];
+function sayPump() {
+  const s = window.speechSynthesis;
+  if (!s || sayCur || !sayQ.length) return;
+  const item = sayQ.shift(); sayCur = item;
+  let done = false;
+  const finish = () => {
+    if (done) return; done = true;
+    if (sayCur !== item) return;
+    clearTimeout(sayWatch); sayCur = null; sayKeep = [];
+    if (!sayQ.length) buddyQuiet();
+    setTimeout(sayPump, 150);
+  };
+  item.finish = finish;
+  buddyTalk(item.text, true);
+  item.parts.forEach((pt, i) => {
+    const u = utter(pt.t, pt.rate || 1); sayKeep.push(u);
+    u.onstart = () => { if (sayCur !== item) return; item.st.started = true; buddyTalk(item.text); if (pt.on) pt.on(); };
+    if (i === item.parts.length - 1) { u.onend = finish; u.onerror = finish; }
     s.speak(u);
-  } catch (e) {}
+  });
+  /* Safety net if a device never reports the end of speech: move on after a generous estimate. */
+  const est = item.parts.reduce((a, pt) => a + 500 + pt.t.length * 90 / (baseRate() * (pt.rate || 1)), 0);
+  sayWatch = setTimeout(finish, est * 1.8 + 3000);
 }
-/* Speak a sequence and run each part's highlight exactly when the voice starts it.
-   If the device never reports speech starting, fall back to a steady timer. */
-function speakSeq(parts) {
+function sayEnqueue(parts, interrupt) {
   const st = { started: false };
   try {
-    const s = window.speechSynthesis; if (!s) return st;
-    s.cancel();
-    const all = parts.map(pt => pt.t).join(' ').replace(/\.\s+(?=[a-z])/g, ' ');
-    buddyTalk(all, true);
-    lastSaid = () => speakSeq(parts);
-    parts.forEach((pt, i) => {
-      const u = utter(pt.t, pt.rate || 1);
-      u.onstart = () => { st.started = true; buddyTalk(all); if (pt.on) pt.on(); };
-      if (i === parts.length - 1) u.onend = u.onerror = () => buddyQuiet();
-      s.speak(u);
-    });
+    const s = window.speechSynthesis; if (!s || !parts.length) return st;
+    const text = parts.map(pt => pt.t).join(' ').replace(/\.\s+(?=[a-z])/g, ' ');
+    sayQ.length = 0;
+    sayQ.push({ parts, text, st });
+    lastSaid = () => sayEnqueue(parts, true);
+    if (interrupt && (sayCur || s.speaking || s.pending)) {
+      const cur = sayCur; sayCur = null; clearTimeout(sayWatch); if (cur) cur.finish && (cur.finish = null);
+      s.cancel(); sayKeep = [];
+      setTimeout(sayPump, 80);
+    } else sayPump();
   } catch (e) {}
   return st;
 }
+/* speak(text): waits its turn.  speak(text, true): the child just tapped something, so say it now. */
+function speak(text, interrupt = false) { if (text) sayEnqueue([{ t: text }], interrupt); }
+/* Speak a sequence and run each part's highlight exactly when the voice starts it. */
+function speakSeq(parts, interrupt = true) { return sayEnqueue(parts, interrupt); }
 /* ---- the purple dino buddy: talks while the voice speaks, shows a speech bubble, repeats when tapped ---- */
 let quietT = null;
 function buddyTalk(text, provisional) {
@@ -1384,7 +1402,14 @@ function placeBubble() {
 }
 function syncedSay(parts, gap = 1100) {
   const st = speakSeq(parts);
-  later(() => { if (!st.started) parts.forEach((pt, i) => later(() => pt.on && pt.on(), i * gap)); }, 1600);
+  let waited = 0;
+  const check = () => {
+    if (st.started) return;
+    const s = window.speechSynthesis, busy = s && (s.speaking || s.pending) && waited < 12000;
+    if (busy) { waited += 800; later(check, 800); return; }
+    parts.forEach((pt, i) => later(() => pt.on && pt.on(), i * gap));
+  };
+  later(check, 1600);
 }
 /* Settings for grown-ups: a small addition problem keeps little fingers out. */
 function openSettings() {
@@ -1427,8 +1452,8 @@ function openSettings() {
     </div>`;
     const ki = $('#kidIn', ov); ki.value = kidName;
     const syncChips = () => { $$('#sRate button', ov).forEach(b => b.classList.toggle('on', b.dataset.v === voiceOpts.rate)); $$('#sStyle button', ov).forEach(b => b.classList.toggle('on', b.dataset.v === voiceOpts.style)); };
-    $$('#sRate button', ov).forEach(b => b.addEventListener('click', () => { voiceOpts.rate = b.dataset.v; store.set('dino-voice-opts', voiceOpts); syncChips(); speak('This is how fast I talk.'); }));
-    $$('#sStyle button', ov).forEach(b => b.addEventListener('click', () => { voiceOpts.style = b.dataset.v; store.set('dino-voice-opts', voiceOpts); syncChips(); speak('Hi! This is my voice.'); }));
+    $$('#sRate button', ov).forEach(b => b.addEventListener('click', () => { voiceOpts.rate = b.dataset.v; store.set('dino-voice-opts', voiceOpts); syncChips(); speak('This is how fast I talk.', true); }));
+    $$('#sStyle button', ov).forEach(b => b.addEventListener('click', () => { voiceOpts.style = b.dataset.v; store.set('dino-voice-opts', voiceOpts); syncChips(); speak('Hi! This is my voice.', true); }));
     syncChips();
     const syncPotty = () => {
       $$('#sPotty button', ov).forEach(b => b.classList.toggle('on', +b.dataset.v === potty.mins));
@@ -1468,7 +1493,7 @@ function voicePanel() {
   $('.vp-done', ov).addEventListener('click', close);
   ov.addEventListener('click', e => { if (e.target === ov) close(); });
 }
-const hush = () => { try { speechSynthesis.cancel(); } catch (e) {} buddyQuiet(); };
+const hush = () => { sayQ.length = 0; sayCur = null; clearTimeout(sayWatch); sayKeep = []; try { speechSynthesis.cancel(); } catch (e) {} buddyQuiet(); };
 const PRAISE = ['Great job!', 'You did it!', 'Yes! That’s right!', 'Wonderful!', 'Way to go!', 'Perfect!', 'You’re so smart!'];
 const praise = () => { const list = kidName ? [...PRAISE, `Super, ${kidName}!`, `Great job, ${kidName}!`] : PRAISE; return list[rand(list.length)]; };
 const NUMW = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
@@ -1551,8 +1576,8 @@ function runPick(ctx, rounds, gen) {
         if (locked || b.classList.contains('wrong')) return;
         if (c.ok) {
           locked = true; b.classList.add('right'); sfx.snap(); const [x, y] = centerOf(b); burst(x, y, 16, .5);
-          speak((q.onRight ? q.onRight + ' ' : '') + praise()); r++; ctx.dots(r, rounds); later(next, 1900);
-        } else { b.classList.add('wrong'); sfx.back(); speak(q.hint || 'Try again!'); }
+          speak((q.onRight ? q.onRight + ' ' : '') + praise(), true); r++; ctx.dots(r, rounds); later(next, 1900);
+        } else { b.classList.add('wrong'); sfx.back(); speak(q.hint || 'Try again!', true); }
       });
       box.appendChild(b);
     });
@@ -1581,7 +1606,7 @@ function runCount(ctx, rounds, min, max) {
       const group = byTens && rowDots.length === 10 ? rowDots.filter(d => !d.classList.contains('on')) : [it];
       group.forEach(d => d.classList.add('on')); c += group.length;
       if (!big) it.insertAdjacentHTML('beforeend', `<b>${c}</b>`); if (badge) { badge.textContent = c; restart(badge, 'settle'); }
-      tone(SCALE[(Math.ceil(c / (group.length > 1 ? 10 : 1)) - 1) % 10], 0, .5, .09); speak(numWord(c));
+      tone(SCALE[(Math.ceil(c / (group.length > 1 ? 10 : 1)) - 1) % 10], 0, .5, .09); speak(numWord(c), true);
     }));
     const opts = big ? numChoices(n, min, max) : [n, ...others([...Array(max).keys()].map(x => x + 1), 2, [n])];
     const box = $('.choices', ctx.stage); let locked = false;
@@ -1589,8 +1614,8 @@ function runCount(ctx, rounds, min, max) {
       const b = document.createElement('button'); b.className = 'choice' + (big ? ' small' : ''); b.textContent = v; b.setAttribute('aria-label', String(v));
       b.addEventListener('click', () => {
         if (locked || b.classList.contains('wrong')) return;
-        if (v === n) { locked = true; b.classList.add('right'); sfx.snap(); const [x, y] = centerOf(b); burst(x, y, 16, .5); speak(`${numWord(n)}! ${praise()}`); r++; ctx.dots(r, rounds); later(next, 1900); }
-        else { b.classList.add('wrong'); sfx.back(); speak('Let’s count them together. Tap each one.'); }
+        if (v === n) { locked = true; b.classList.add('right'); sfx.snap(); const [x, y] = centerOf(b); burst(x, y, 16, .5); speak(`${numWord(n)}! ${praise()}`, true); r++; ctx.dots(r, rounds); later(next, 1900); }
+        else { b.classList.add('wrong'); sfx.back(); speak('Let’s count them together. Tap each one.', true); }
       });
       box.appendChild(b);
     });
@@ -1616,8 +1641,8 @@ function runSetClock(ctx, rounds) {
     wrap.addEventListener('pointermove', e => { if (dragging) setFrom(e); });
     const up = () => {
       if (!dragging) return; dragging = false;
-      if (hour === target) { locked = true; sfx.snap(); const [x, y] = centerOf(wrap); burst(x, y, 30, .8); speak(`${NUMW[target]} o'clock! ${praise()}`); r++; ctx.dots(r, rounds); later(next, 2100); }
-      else speak(`That's ${NUMW[hour]} o'clock. Find the number ${target}.`);
+      if (hour === target) { locked = true; sfx.snap(); const [x, y] = centerOf(wrap); burst(x, y, 30, .8); speak(`${NUMW[target]} o'clock! ${praise()}`, true); r++; ctx.dots(r, rounds); later(next, 2100); }
+      else speak(`That's ${NUMW[hour]} o'clock. Find the number ${target}.`, true);
     };
     wrap.addEventListener('pointerup', up); wrap.addEventListener('pointercancel', up);
   };
@@ -1637,9 +1662,9 @@ function runBuild(ctx, rounds) {
     $$('.wtile', ctx.stage).forEach(t => t.addEventListener('click', () => {
       if (idx >= letters.length) return;
       if (t.dataset.l === letters[idx]) {
-        slots[idx].textContent = t.dataset.l; slots[idx].classList.add('filled'); t.classList.add('used'); tone(SCALE[idx + 3], 0, .5, .12); speak(letterName(t.dataset.l) + '.'); idx++;
+        slots[idx].textContent = t.dataset.l; slots[idx].classList.add('filled'); t.classList.add('used'); tone(SCALE[idx + 3], 0, .5, .12); speak(letterName(t.dataset.l) + '.', true); idx++;
         if (idx === letters.length) { const [x, y] = centerOf(slots[1] || slots[0]); burst(x, y, 30, .8); sfx.snap(); later(() => speakSeq([...letters.map(l => ({ t: letterName(l) + '.', rate: .8 })), { t: `${w}! ${praise()}` }]), 500); r++; ctx.dots(r, rounds); later(next, 3600); }
-      } else { restart(t, 'nope'); sfx.back(); speak(`Find the letter ${letterName(letters[idx])}.`); }
+      } else { restart(t, 'nope'); sfx.back(); speak(`Find the letter ${letterName(letters[idx])}.`, true); }
     }));
   };
   next();
@@ -1756,7 +1781,7 @@ function showMap(unitId, finishedId) {
     <div class="stones ${ls.length > 14 ? 'many lots' : ls.length > 8 ? 'many' : ''}">${ls.map(l => `<button class="stone ${nx && nx.id === l.id ? 'next' : ''}" data-l="${l.id}" aria-label="${l.title}"><div class="disc" style="--c:${U.color}">${l.glyph}${learn.done[l.id] ? '<svg class="badge"><use href="#star"/></svg>' : ''}</div><span class="label">${l.title}</span>${nx && nx.id === l.id ? '<svg class="here dino" viewBox="0 0 230 200"><use href="#dino"/></svg>' : ''}</button>`).join('')}</div>
   </div><button class="voicebtn" aria-label="Choose the voice">${ICON.speak}<span>Voice</span></button>`;
   $('.voicebtn', body).addEventListener('click', () => { sfx.click(); voicePanel(); });
-  $$('.utab', body).forEach(b => b.addEventListener('click', () => { sfx.click(); showMap(b.dataset.u); speak(UNITS.find(u => u.id === b.dataset.u).name); }));
+  $$('.utab', body).forEach(b => b.addEventListener('click', () => { sfx.click(); showMap(b.dataset.u); speak(UNITS.find(u => u.id === b.dataset.u).name, true); }));
   $$('.stone', body).forEach(b => b.addEventListener('click', () => { sfx.chime(); openLesson(LESSONS.find(l => l.id === b.dataset.l)); }));
 }
 function openLesson(L) {
@@ -1766,7 +1791,7 @@ function openLesson(L) {
   const ctx = {
     stage: $('.stage', body),
     prompt(text, say) { $('.prompt', body).textContent = text; spoken = (typeof say === 'string' && say) ? say : text; speak(spoken); },
-    say(text) { spoken = text; speak(text); },
+    say(text) { spoken = text; speak(text, true); },
     setSpoken(text) { spoken = text; },
     replay: null,
     dots(i, n) { const d = $('.dots', body); if (d.children.length !== n) d.innerHTML = '<i></i>'.repeat(n); [...d.children].forEach((c, j) => c.classList.toggle('on', j < i)); },
@@ -1778,7 +1803,7 @@ function openLesson(L) {
   };
   $('.prompt', body).textContent = L.title;
   $('#lBack').addEventListener('click', () => { hush(); sfx.click(); showMap(L.unit); });
-  $('#lSay').addEventListener('click', () => { if (ctx.replay) ctx.replay(); else speak(spoken); });
+  $('#lSay').addEventListener('click', () => { if (ctx.replay) ctx.replay(); else speak(spoken, true); });
   L.run(ctx);
 }
 build.learn = () => { lullPaused = true; showMap(); cleanup = () => hush(); };
@@ -2691,6 +2716,490 @@ const HALLOWEEN = [
 ];
 HALLOWEEN.forEach((h, i) => { h.seed = 901 + i * 13; });
 PICS.unshift(...HALLOWEEN);
+
+/* ================= More pictures (20): 5 Halloween + 15 dino / flower / butterfly ================= */
+const lerpP = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+const shrinkP = (pts, f) => { const c = pts.reduce((s, q) => [s[0] + q[0] / pts.length, s[1] + q[1] / pts.length], [0, 0]); return pts.map(q => [c[0] + (q[0] - c[0]) * f, c[1] + (q[1] - c[1]) * f]); };
+function pPie(cx, cy, r, a0, a1) {
+  const p0 = [cx + Math.cos(a0 * D2R) * r, cy + Math.sin(a0 * D2R) * r], p1 = [cx + Math.cos(a1 * D2R) * r, cy + Math.sin(a1 * D2R) * r];
+  return `M${f1(cx)} ${f1(cy)}L${f1(p0[0])} ${f1(p0[1])}A${f1(r)} ${f1(r)} 0 ${(a1 - a0) > 180 ? 1 : 0} 1 ${f1(p1[0])} ${f1(p1[1])}Z`;
+}
+function drawBlossom(p, x, y, s, petal, center, n = 6, petal2 = null) {
+  for (let i = 0; i < n; i++) { p.at(x, y, 1, i * 360 / n); p.add(pE(0, -26 * s, 13 * s, 22 * s), petal2 && i % 2 ? petal2 : petal); p.pop(); }
+  p.add(pC(x, y, 13 * s), center);
+}
+function drawKitty(p, x, y, s, c, ear, eye, belly) {
+  p.at(x, y, s);
+  p.add('M36 42 C76 34 96 0 76 -34 C70 -44 58 -38 64 -28 C80 -2 62 22 34 28Z', c);
+  p.add(pE(0, 10, 46, 54), c);
+  p.add(pE(0, 34, 26, 24), belly);
+  p.add(pC(0, -58, 40), c);
+  p.add(pPL([[-36, -70], [-32, -112], [-6, -92]]), c); p.add(pPL([[36, -70], [32, -112], [6, -92]]), c);
+  p.add(pPL([[-29, -82], [-27, -102], [-13, -91]]), ear); p.add(pPL([[29, -82], [27, -102], [13, -91]]), ear);
+  p.add(pE(-15, -62, 9, 12), eye); p.add(pE(15, -62, 9, 12), eye);
+  p.add(pE(-15, -61, 3.5, 9), '#2e1a47'); p.add(pE(15, -61, 3.5, 9), '#2e1a47');
+  p.add(pPL([[-6, -46], [6, -46], [0, -39]]), ear);
+  p.add(pE(-18, 60, 13, 8), belly); p.add(pE(18, 60, 13, 8), belly);
+  p.pop();
+}
+function drawOwl(p, x, y, s, body, belly, wing) {
+  p.at(x, y, s);
+  p.add(pPL([[-38, -48], [-48, -92], [-12, -60]]), body); p.add(pPL([[38, -48], [48, -92], [12, -60]]), body);
+  p.add(pE(0, 0, 52, 66), body);
+  p.add(pE(0, 20, 34, 42), belly);
+  [[-14, 4], [14, 4], [0, 18], [-18, 30], [18, 30], [0, 44]].forEach(([dx, dy]) => p.add(`M${dx - 8} ${dy} Q${dx} ${dy + 9} ${dx + 8} ${dy} Q${dx} ${dy + 4} ${dx - 8} ${dy}Z`, wing));
+  p.at(-48, 10, 1, 14); p.add(pE(0, 0, 15, 38), wing); p.pop();
+  p.at(48, 10, 1, -14); p.add(pE(0, 0, 15, 38), wing); p.pop();
+  p.add(pC(-20, -28, 20), '#ffffff'); p.add(pC(20, -28, 20), '#ffffff');
+  p.add(pC(-18, -26, 10), '#2e1a47'); p.add(pC(22, -26, 10), '#2e1a47');
+  p.add(pC(-14, -31, 3.5), '#ffffff'); p.add(pC(26, -31, 3.5), '#ffffff');
+  p.add(pPL([[-8, -12], [8, -12], [0, 2]]), '#ffb070');
+  p.add(pE(-16, 64, 11, 6), '#ffb070'); p.add(pE(16, 64, 11, 6), '#ffb070');
+  p.pop();
+}
+function drawWeb(p, cx, cy, R, spokes, rings, cols, line) {
+  const pt = (r, j) => { const a = (j * 360 / spokes - 90) * D2R; return [cx + Math.cos(a) * r, cy + Math.sin(a) * r]; };
+  p.add(pC(cx, cy, R + 8), line);
+  for (let k = 0; k < rings; k++) {
+    const r0 = R * k / rings, r1 = R * (k + 1) / rings;
+    for (let j = 0; j < spokes; j++) {
+      const poly = k === 0 ? [[cx, cy], pt(r1, j), pt(r1, j + 1)] : [pt(r0, j), pt(r1, j), pt(r1, j + 1), pt(r0, j + 1)];
+      p.add(pPL(shrinkP(poly, k === 0 ? .86 : .9)), cols[(k + j) % cols.length]);
+    }
+  }
+}
+function drawSpider(p, x, y, s, c, thread) {
+  p.add(pRR(x - 2, 0, 4, y - 30 * s, 2), thread);
+  p.at(x, y, s);
+  for (let k = 0; k < 4; k++) [false, true].forEach(fl => { p.at(0, 0, 1, 0, fl); p.at(14, 2 + k * 9, 1, -50 + k * 32); p.add(pRR(0, -3.5, 48, 7, 3.5), c); p.pop(); p.pop(); });
+  p.add(pE(0, 24, 30, 34), c);
+  p.add(pC(0, -12, 24), c);
+  p.add(pC(-9, -16, 8), '#ffffff'); p.add(pC(9, -16, 8), '#ffffff');
+  p.add(pC(-8, -15, 4), '#2e1a47'); p.add(pC(10, -15, 4), '#2e1a47');
+  p.add(pE(-16, -3, 5, 3), '#ff8fc2'); p.add(pE(16, -3, 5, 3), '#ff8fc2');
+  p.add(pE(0, 24, 14, 16), shade(c, 1.35));
+  p.pop();
+}
+function drawCauldron(p, x, y, s) {
+  p.at(x, y, s);
+  [[-80, '#ff8a3d'], [-40, '#ffd23d'], [0, '#ff8a3d'], [40, '#ffd23d']].forEach(([dx, c]) => p.add(`M${dx} 124 C${dx - 12} 96 ${dx + 8} 74 ${dx + 20} 44 C${dx + 30} 74 ${dx + 52} 96 ${dx + 40} 124Z`, c));
+  p.add(pRR(-104, 112, 208, 26, 13), '#9b6a4f'); p.add(pRR(-84, 130, 168, 24, 12), '#7a4f37');
+  p.add(pRR(-94, 56, 22, 64, 8), '#2e1a47'); p.add(pRR(72, 56, 22, 64, 8), '#2e1a47');
+  p.add(pE(0, 10, 132, 102), '#3b2a55');
+  p.add(pE(-64, -6, 18, 42), '#5a4378');
+  p.add(pE(0, -80, 142, 30), '#4a3166');
+  p.add(pE(0, -80, 120, 20), '#7fd38f');
+  [[-46, -102, 18], [8, -118, 24], [58, -100, 14], [-6, -150, 12], [32, -176, 9], [-30, -190, 7]].forEach(([dx, dy, r], i) => p.add(pC(dx, dy, r), i % 2 ? '#c4f0b0' : '#9fe39b'));
+  p.pop();
+}
+function drawUmbrella(p, x, y, s, cols, handle = '#7a4f37', rot = 0) {
+  p.at(x, y, s, rot);
+  p.add(pRR(-5, -10, 10, 150, 5), handle);
+  for (let k = 0; k < 6; k++) { const x0 = -150 + k * 50, x1 = x0 + 50; p.add(`M0 -120 L${x0} 0 Q${x0 + 25} 24 ${x1} 0 Z`, cols[k % cols.length]); }
+  p.add(pC(0, -124, 10), handle);
+  p.pop();
+}
+function drawCone(p, x, y, s, scoops) {
+  p.at(x, y, s);
+  const bot = 260, w0 = 72;
+  for (let k = 0; k < 5; k++) { const ya = k * bot / 5, yb = (k + 1) * bot / 5, wa = w0 * (1 - ya / bot), wb = w0 * (1 - yb / bot); p.add(pPL([[-wa, ya], [wa, ya], [wb, yb], [-wb, yb]]), k % 2 ? '#e8b07e' : '#f5c48f'); }
+  scoops.forEach((c, i) => {
+    const yy = -40 - i * 82, r = 76 - i * 6;
+    p.add(pC(0, yy, r), c);
+    p.add(`M${-r} ${yy + 10} Q-50 ${yy + 52} -30 ${yy + 22} Q-10 ${yy + 62} 10 ${yy + 26} Q35 ${yy + 58} 50 ${yy + 22} Q64 ${yy + 42} ${r} ${yy + 10} Q0 ${yy + 30} ${-r} ${yy + 10}Z`, shade(c, .86));
+    [[-30, -30, 30], [20, -40, -20], [40, -10, 60], [-10, -55, 10], [-45, 0, -40]].forEach(([dx, dy, rr], j) => { p.at(dx, yy + dy, 1, rr); p.add(pRR(-8, -3, 16, 6, 3), ['#ff6b6b', '#6fb2ff', '#ffd27a', '#7fd38f', '#a77be8'][(i + j) % 5]); p.pop(); });
+  });
+  const ty = -40 - (scoops.length - 1) * 82 - (76 - (scoops.length - 1) * 6);
+  p.add(pRR(-2, ty - 46, 4, 30, 2), '#4f8a3a'); p.add(pC(0, ty - 10, 20), '#ff4d6d');
+  p.pop();
+}
+function drawAirBalloon(p, x, y, s, cols) {
+  p.at(x, y, s);
+  const lens = w => `M0 -150 C${w} -150 ${w * 1.15} 52 0 142 C${-w * 1.15} 52 ${-w} -150 0 -150Z`;
+  [150, 112, 74, 36].forEach((w, i) => p.add(lens(w), cols[i % cols.length]));
+  p.add(pPL([[-42, 128], [42, 128], [30, 168], [-30, 168]]), cols[0]);
+  p.add(pRR(-31, 168, 4, 62, 2), '#7a4f37'); p.add(pRR(27, 168, 4, 62, 2), '#7a4f37');
+  p.add(pRR(-42, 226, 84, 58, 8), '#c98b5e');
+  p.add(pRR(-42, 242, 84, 9, 0), '#a86c44'); p.add(pRR(-42, 262, 84, 9, 0), '#a86c44');
+  p.pop();
+}
+function drawRocket(p, x, y, s, body, accent, rot = 20) {
+  p.at(x, y, s, rot);
+  p.add('M-32 118 Q0 240 32 118Z', '#ff8a3d'); p.add('M-17 118 Q0 194 17 118Z', '#ffd23d');
+  p.add(pPL([[-48, 30], [-98, 122], [-40, 112]]), accent); p.add(pPL([[48, 30], [98, 122], [40, 112]]), accent);
+  p.add('M0 -170 C62 -110 62 40 46 120 L-46 120 C-62 40 -62 -110 0 -170Z', body);
+  p.add('M0 -170 C30 -142 40 -112 42 -96 L-42 -96 C-40 -112 -30 -142 0 -170Z', accent);
+  p.add(pC(0, -28, 32), '#4a3166'); p.add(pC(0, -28, 23), '#8fc4ff'); p.add(pC(-8, -36, 6), '#ffffff');
+  p.add(pRR(-52, 62, 104, 16, 6), accent);
+  p.pop();
+}
+function drawPlanet(p, x, y, r, c, band, ringC) {
+  p.push(AM.mul(AM.t(x, y), AM.s(1, .26))); p.add(pArc(0, 0, r * 1.4, r * 1.85, 180, 360, 30), ringC); p.pop();
+  p.add(pC(x, y, r), c);
+  p.add(`M${f1(x - r * .95)} ${f1(y - r * .2)} Q${x} ${f1(y - r * .45)} ${f1(x + r * .95)} ${f1(y - r * .2)} L${f1(x + r * .97)} ${f1(y + r * .05)} Q${x} ${f1(y - r * .2)} ${f1(x - r * .97)} ${f1(y + r * .05)}Z`, band);
+  p.push(AM.mul(AM.t(x, y), AM.s(1, .26))); p.add(pArc(0, 0, r * 1.4, r * 1.85, 0, 180, 30), ringC); p.pop();
+}
+function drawSnowflake(p, x, y, r, c, c2) { p.add(pStar(x, y, r, r * .38, -90, 6), c); p.add(pC(x, y, r * .26), c2); }
+function drawSnowman(p, x, y, s) {
+  p.at(x, y, s);
+  p.add(pC(0, 60, 70), '#ffffff'); p.add(pC(0, -40, 52), '#f4f8ff'); p.add(pC(0, -120, 38), '#ffffff');
+  p.add(pRR(-34, -168, 68, 12, 5), '#3b2a55'); p.add(pRR(-22, -214, 44, 48, 6), '#3b2a55'); p.add(pRR(-22, -186, 44, 10, 0), '#ff6b6b');
+  p.add(pC(-13, -128, 5), '#2e1a47'); p.add(pC(13, -128, 5), '#2e1a47');
+  p.add(pPL([[0, -118], [34, -110], [0, -106]]), '#ff9a3d');
+  p.add(pRR(-50, -90, 100, 18, 9), '#ff8fc2'); p.add(pRR(18, -90, 18, 56, 7), '#ff8fc2');
+  [-50, -20, 10].forEach(dy => p.add(pC(0, dy, 6), '#2e1a47'));
+  p.add(pRR(-130, -60, 70, 8, 4), '#7a4f37'); p.add(pRR(60, -60, 70, 8, 4), '#7a4f37');
+  p.pop();
+}
+function drawLotus(p, x, y, s, c1, c2) {
+  p.at(x, y, s);
+  [-64, -32, 0, 32, 64].forEach((a, i) => { p.at(0, 0, 1, a); p.add(pE(0, -34, 15, 34), i % 2 ? c2 : c1); p.pop(); });
+  p.add(pE(0, 2, 30, 10), '#ffd27a');
+  p.pop();
+}
+function drawDragonfly(p, x, y, s, body, wing, rot = 0) {
+  p.at(x, y, s, rot);
+  [[-1, -20, 34, 11, -12], [1, -20, 34, 11, 12], [-1, 0, 28, 9, 12], [1, 0, 28, 9, -12]].forEach(([sd, dy, rx, ry, r]) => { p.at(sd * 30, dy, 1, r); p.add(pE(0, 0, rx, ry), wing); p.pop(); });
+  p.add(pRR(-5, -24, 10, 84, 5), body); p.add(pC(0, -30, 10), body);
+  p.pop();
+}
+function drawCattail(p, x, y, s, h) { p.add(pRR(x - 3 * s, y - h, 6 * s, h, 3 * s), '#4fa37f'); p.add(pE(x, y - h + 20 * s, 9 * s, 26 * s), '#9b6a4f'); p.at(x + 10 * s, y - h * .4, 1, 25); p.add(pE(0, 0, 6 * s, 40 * s), '#7fd38f'); p.pop(); }
+function drawCastle(p, x, y, s, c, c2, door) {
+  p.at(x, y, s);
+  const cren = (x0, y0, w, n, col) => { for (let i = 0; i < n; i++) p.add(pRR(x0 + i * w / n + 2, y0 - 16, w / n - 6, 18, 3), col); };
+  p.add(pRR(-80, -130, 160, 80, 6), c2); cren(-80, -130, 160, 5, c2);
+  p.add(pRR(-130, -150, 50, 100, 6), c); cren(-130, -150, 50, 2, c);
+  p.add(pRR(80, -150, 50, 100, 6), c); cren(80, -150, 50, 2, c);
+  p.add(pRR(-30, -200, 60, 76, 6), c); cren(-30, -200, 60, 3, c);
+  p.add(pRR(-150, -60, 300, 62, 8), c2);
+  p.add('M-22 2 L-22 -32 A22 22 0 0 1 22 -32 L22 2Z', door);
+  p.add(pRR(-2, -270, 4, 60, 2), '#7a4f37'); p.add(pPL([[2, -270], [40, -256], [2, -242]]), '#ff6b6b');
+  p.add(pRR(-107, -200, 4, 52, 2), '#7a4f37'); p.add(pPL([[-103, -200], [-74, -189], [-103, -178]]), '#6fb2ff');
+  p.add(pC(-105, -110, 10), door); p.add(pC(105, -110, 10), door);
+  p.pop();
+}
+function drawWindmill(p, x, y, s, ang = 15) {
+  p.at(x, y, s);
+  p.add(pPL([[-60, 0], [-40, -200], [40, -200], [60, 0]]), '#f3e3c8');
+  p.add(pPL([[-58, -196], [0, -270], [58, -196]]), '#a86c44');
+  p.add('M-18 0 L-18 -40 A18 18 0 0 1 18 -40 L18 0Z', '#7a4f37');
+  p.add(pC(0, -120, 16), '#8fc4ff');
+  for (let k = 0; k < 4; k++) { p.at(0, -230, 1, ang + k * 90); p.add(pRR(-14, -180, 28, 160, 4), '#fff7f3'); p.add(pRR(-9, -170, 18, 60, 2), '#c9a6ff'); p.add(pRR(-9, -102, 18, 64, 2), '#c9a6ff'); p.pop(); }
+  p.add(pC(0, -230, 16), '#7a4f37');
+  p.pop();
+}
+function drawBlanket(p, x, y, wTop, wBot, h, nx, ny, c1, c2) {
+  for (let r = 0; r < ny; r++) for (let c = 0; c < nx; c++) {
+    const t0 = r / ny, t1 = (r + 1) / ny, wa = wTop + (wBot - wTop) * t0, wb = wTop + (wBot - wTop) * t1;
+    const ya = y + h * t0, yb = y + h * t1;
+    p.add(pPL([[x - wa / 2 + wa * c / nx, ya], [x - wa / 2 + wa * (c + 1) / nx, ya], [x - wb / 2 + wb * (c + 1) / nx, yb], [x - wb / 2 + wb * c / nx, yb]]), (r + c) % 2 ? c1 : c2);
+  }
+}
+function drawBasket(p, x, y, s) {
+  p.at(x, y, s);
+  p.add(pArc(0, -40, 48, 60, 180, 360, 20), '#a86c44');
+  p.add(pPL([[-80, -40], [80, -40], [64, 40], [-64, 40]]), '#c98b5e');
+  p.add(pPL([[-76, -20], [76, -20], [73, -6], [-73, -6]]), '#a86c44'); p.add(pPL([[-71, 8], [71, 8], [68, 22], [-68, 22]]), '#a86c44');
+  p.add(pE(-30, -46, 26, 12), '#ff6b6b'); p.add(pE(26, -46, 30, 12), '#fff1d6');
+  p.pop();
+}
+function drawWatermelon(p, x, y, s, rot = 0) { p.at(x, y, s, rot); p.add(pPie(0, 0, 60, 0, 180), '#4fa37f'); p.add(pPie(0, 0, 50, 0, 180), '#fff1d6'); p.add(pPie(0, 0, 44, 0, 180), '#ff6b6b'); [[-20, 16], [0, 26], [20, 16], [-8, 34], [10, 36]].forEach(([dx, dy]) => p.add(pE(dx, dy, 3, 5), '#2e1a47')); p.pop(); }
+function drawTrainCar(p, x, y, w, h, c, trim) {
+  p.add(pRR(x, y, w, h, 12), c); p.add(pRR(x, y + h - 16, w, 16, 6), trim);
+  [x + 34, x + w - 34].forEach(cx => { p.add(pC(cx, y + h + 6, 24), '#3b2a55'); p.add(pC(cx, y + h + 6, 10), '#c9c3d6'); });
+}
+function drawEngine(p, x, y) {
+  p.add(pRR(x + 120, y - 120, 110, 180, 10), '#ff6b6b'); p.add(pRR(x + 140, y - 100, 70, 60, 8), '#8fc4ff');
+  p.add(pRR(x + 104, y - 140, 142, 26, 8), '#3b2a55');
+  p.add(pRR(x - 30, y - 50, 160, 110, 40), '#6fb2ff'); p.add(pRR(x - 30, y + 30, 160, 30, 8), '#ffd27a');
+  p.add(pRR(x + 10, y - 110, 36, 64, 6), '#3b2a55'); p.add(pRR(x + 2, y - 122, 52, 18, 6), '#3b2a55');
+  p.add(pPL([[x - 30, y + 20], [x - 70, y + 60], [x - 30, y + 60]]), '#ffd27a');
+  [x + 10, x + 90, x + 190].forEach((cx, i) => { p.add(pC(cx, y + 66, i === 2 ? 34 : 26), '#3b2a55'); p.add(pC(cx, y + 66, i === 2 ? 14 : 10), '#c9c3d6'); });
+}
+function drawHatchEgg(p, x, y, s, c, spot, baby) {
+  p.at(x, y, s);
+  p.add(pC(0, -26, 36), baby.body);
+  [[-20, -58], [0, -66], [20, -58]].forEach(([dx, dy]) => p.add(pPL([[dx - 8, dy + 6], [dx, dy - 12], [dx + 8, dy + 6]]), baby.spike));
+  p.add(pC(-13, -30, 9), '#ffffff'); p.add(pC(13, -30, 9), '#ffffff'); p.add(pC(-12, -29, 5), '#2e1a47'); p.add(pC(14, -29, 5), '#2e1a47');
+  p.add(pE(-24, -16, 6, 4), baby.cheek); p.add(pE(24, -16, 6, 4), baby.cheek);
+  p.add('M-42 6 L-30 -8 L-18 6 L-6 -10 L6 6 L18 -8 L30 6 L42 -8 C44 34 24 50 0 50 C-24 50 -44 34 -42 6Z', c);
+  [[-16, 22, 8], [16, 30, 9], [0, 40, 5]].forEach(([dx, dy, r]) => p.add(pC(dx, dy, r), spot));
+  p.pop();
+}
+function drawMonarch(p, x, y, s, cols, vein, dot) {
+  p.at(x, y, s);
+  const UP = [[60, -150], [160, -215], [255, -190], [270, -100], [205, -20], [70, 10]], LO = [[80, 30], [190, 40], [225, 120], [170, 200], [80, 170], [30, 60]];
+  [[UP, [20, -20]], [LO, [20, 30]]].forEach(([O, B], wi) => [false, true].forEach(fl => {
+    p.at(0, 0, 1, 0, fl);
+    p.add(pPL([B, ...O]), vein);
+    for (let i = 0; i < O.length - 1; i++) {
+      [[.12, .5], [.53, .84]].forEach(([a, b], ri) => p.add(pPL(shrinkP([lerpP(B, O[i], a), lerpP(B, O[i], b), lerpP(B, O[i + 1], b), lerpP(B, O[i + 1], a)], .86)), cols[(i + ri + wi) % cols.length]));
+      const m = lerpP(lerpP(B, O[i], .93), lerpP(B, O[i + 1], .93), .5); p.add(pC(m[0], m[1], 7), dot);
+    }
+    p.pop();
+  }));
+  for (let k = 0; k < 6; k++) p.add(pE(0, -40 + k * 30, 16 - k, 18), k % 2 ? '#3b2a55' : '#5a3488');
+  p.add(pC(0, -64, 20), '#3b2a55');
+  p.add('M-6 -80 C-20 -120 -40 -150 -60 -160 L-56 -168 C-34 -156 -14 -126 0 -84Z', '#3b2a55'); p.add('M6 -80 C20 -120 40 -150 60 -160 L56 -168 C34 -156 14 -126 0 -84Z', '#3b2a55');
+  p.pop();
+}
+function drawBee(p, x, y, s, rot = 0) {
+  p.at(x, y, s, rot);
+  p.at(-6, -18, 1, -20); p.add(pE(0, 0, 14, 20), '#e6f2ff'); p.pop(); p.at(10, -18, 1, 20); p.add(pE(0, 0, 14, 20), '#e6f2ff'); p.pop();
+  p.add(pE(0, 0, 28, 20), '#ffd23d'); p.add(pRR(-6, -19, 8, 38, 3), '#3b2a55'); p.add(pRR(8, -17, 8, 34, 3), '#3b2a55');
+  p.add(pC(26, -4, 12), '#3b2a55'); p.add(pC(29, -7, 3.5), '#ffffff');
+  p.pop();
+}
+function drawStarfish(p, x, y, r, c, c2, rot = -90) { p.add(pStar(x, y, r, r * .48, rot), c); p.add(pC(x, y, r * .22), c2); }
+function drawBucket(p, x, y, s, c, c2) { p.at(x, y, s); p.add(pArc(0, -60, 40, 48, 180, 360, 16), c2); p.add(pPL([[-50, -60], [50, -60], [38, 40], [-38, 40]]), c); p.add(pPL([[-47, -40], [47, -40], [45, -26], [-45, -26]]), c2); p.pop(); }
+function drawRaindrop(p, x, y, s, c) { p.at(x, y, s); p.add('M0 -24 C10 -8 16 2 16 10 C16 20 8 26 0 26 C-8 26 -16 20 -16 10 C-16 2 -10 -8 0 -24Z', c); p.pop(); }
+function drawTulip(p, x, y, s, c) { p.at(x, y, s); p.add(pRR(-2, 0, 4, 36, 2), '#4fa37f'); p.add('M-14 0 C-16 -18 -10 -26 -6 -20 L0 -30 L6 -20 C10 -26 16 -18 14 0 C10 10 -10 10 -14 0Z', c); p.pop(); }
+function drawShell(p, x, y, s, c, c2) { p.at(x, y, s); p.add('M-30 0 A30 30 0 0 1 30 0Z', c); p.add('M-16 0 A16 16 0 0 1 16 0Z', c2); p.pop(); }
+const scarfHat = q => { q.add(pE(186, 18, 42, 22), '#ff6b6b'); q.add(pC(186, -6, 12), '#ffffff'); q.add(pRR(140, 84, 70, 18, 8), '#ff6b6b'); q.add(pRR(150, 96, 18, 44, 7), '#ff8fc2'); };
+const helmet = q => { q.add(pArc(186, 50, 56, 66, 0, 360, 40), '#e6f2ff'); q.add(pC(162, 24, 8), '#ffffff'); };
+const bootsUmb = q => { q.add(pRR(62, 176, 38, 20, 8), '#ffd23d'); q.add(pRR(110, 176, 38, 20, 8), '#ffd23d'); };
+const NIGHT = (p, cols) => { band(p, 0, 0, 0, 0, cols[0], [260, 540, 800], [cols[1], cols[2]]); band(p, 230, 12, .011, 0, cols[3], [220, 500, 780], [cols[4], cols[3]]); band(p, 440, 12, .012, 1, cols[5], [340, 680], [cols[6], cols[5]]); };
+const starsAround = (p, n, avoidX, avoidY, avoidR, yMax = 480) => { for (let i = 0; i < n; i++) { let x, y, k = 0; do { x = p.R(30, 970); y = p.R(30, yMax); k++; } while (Math.hypot(x - avoidX, y - avoidY) < avoidR && k < 50); p.add(pStar(x, y, p.R(9, 17)), i % 3 ? '#ffd27a' : '#fff3c8'); } };
+
+const HALLOWEEN2 = [
+  { id: 'porch', name: 'Pumpkin Porch', tag: '🎃', build: p => {
+    NIGHT(p, ['#2a1a4a', '#32205a', '#24163f', '#3b2563', '#462d73', '#4f2f78', '#5a3688']);
+    p.add(pC(820, 150, 80), '#fff3c8'); [[795, 130, 14], [845, 180, 10]].forEach(q => p.add(pC(q[0], q[1], q[2]), '#f2dfa3'));
+    starsAround(p, 10, 820, 150, 130, 300);
+    bat(p, 160, 120, .8); bat(p, 600, 90, .7);
+    for (let i = 0; i < 9; i++) p.add(pRR(150, 330 + i * 52, 560, 48, 4), i % 2 ? '#8a6aa8' : '#7d5ca0');
+    p.add(pPL([[110, 340], [430, 200], [750, 340]]), '#4a3158');
+    p.add(pRR(330, 520, 200, 280, 14), '#ff9a6b'); p.add(pRR(345, 535, 80, 120, 8), '#ffb38a'); p.add(pRR(435, 535, 80, 120, 8), '#ffb38a'); p.add(pRR(345, 665, 80, 120, 8), '#ffb38a'); p.add(pRR(435, 665, 80, 120, 8), '#ffb38a'); p.add(pC(500, 670, 10), '#ffd23d');
+    for (let i = 0; i < 14; i++) { p.at(430 + Math.cos(i / 14 * 6.283) * 62, 455 + Math.sin(i / 14 * 6.283) * 62, 1, i * 25.7); p.add(pE(0, 0, 14, 24), i % 2 ? '#ff8a3d' : '#ffd23d'); p.pop(); }
+    p.add(pRR(180, 400, 110, 110, 10), '#ffd23d'); p.add(pRR(190, 410, 42, 42, 4), '#ffe9a0'); p.add(pRR(238, 410, 42, 42, 4), '#ffe9a0'); p.add(pRR(190, 458, 42, 42, 4), '#ffe9a0'); p.add(pRR(238, 458, 42, 42, 4), '#ffe9a0');
+    p.add(pRR(580, 400, 110, 110, 10), '#ffd23d'); p.add(pRR(590, 410, 42, 42, 4), '#ffe9a0'); p.add(pRR(638, 410, 42, 42, 4), '#ffe9a0'); p.add(pRR(590, 458, 42, 42, 4), '#ffe9a0'); p.add(pRR(638, 458, 42, 42, 4), '#ffe9a0');
+    [[800, 230, '#c98b5e'], [840, 300, '#b07448'], [880, 370, '#c98b5e']].forEach(([y, w, c], i) => p.add(pRR(500 - w / 2 - 120 + i * 0, y, w + 240, 70, 6), c));
+    band(p, 900, 10, .02, 1, '#4f7a43', [300, 700], ['#5c8a4e', '#436a39']);
+    pumpkin(p, 220, 770, 1.0, true); pumpkin(p, 780, 770, 1.0, true); pumpkin(p, 300, 860, .7, false); pumpkin(p, 700, 860, .8, true); pumpkin(p, 130, 930, .9, true); pumpkin(p, 880, 930, .9, false);
+  } },
+  { id: 'cat', name: 'Kitty and the Moon', tag: '🎃', build: p => {
+    NIGHT(p, ['#3b2160', '#47286f', '#331c55', '#5a2f78', '#663888', '#7a3f8a', '#6a3478']);
+    p.add(pC(500, 380, 230), '#fff3c8'); p.add(pC(500, 380, 190), '#fff8dc'); [[420, 330, 30], [580, 440, 24], [560, 300, 16], [440, 450, 14]].forEach(q => p.add(pC(q[0], q[1], q[2]), '#f2dfa3'));
+    starsAround(p, 16, 500, 380, 270, 560);
+    bat(p, 160, 160, .9); bat(p, 850, 130, .8); bat(p, 820, 520, .6);
+    for (let i = 0; i < 12; i++) p.add(pPL([[i * 86 + 4, 900], [i * 86 + 4, 640], [i * 86 + 43, 600], [i * 86 + 82, 640], [i * 86 + 82, 900]]), i % 2 ? '#5a3d6e' : '#4e3462');
+    p.add(pRR(0, 680, 1000, 26, 6), '#3e2850'); p.add(pRR(0, 820, 1000, 26, 6), '#3e2850');
+    drawKitty(p, 500, 520, 1.5, '#2e1a47', '#ff8fc2', '#ffd23d', '#4a3166');
+    band(p, 880, 14, .015, 1, '#4f7a43', [260, 560, 860], ['#5c8a4e', '#436a39']);
+    pumpkin(p, 160, 900, 1.1, true); pumpkin(p, 860, 910, 1.0, true); pumpkin(p, 360, 950, .6, false); pumpkin(p, 650, 950, .7, false);
+  } },
+  { id: 'cauldron', name: 'Witch’s Brew', tag: '🎃', build: p => {
+    NIGHT(p, ['#24153f', '#2c1a4c', '#1f1236', '#3a2363', '#442a72', '#4f2c78', '#5d3488']);
+    p.add(pC(160, 150, 70), '#fff3c8'); starsAround(p, 14, 160, 150, 110, 420);
+    pine(p, 90, 560, 1.4, '#1f4a44', '#28584f', '#4a3326'); pine(p, 930, 560, 1.5, '#1f4a44', '#28584f', '#4a3326'); pine(p, 820, 520, .9, '#28584f', '#1f4a44', '#4a3326');
+    band(p, 600, 20, .01, .4, '#3d5a5a', [200, 450, 700, 900], ['#466866', '#344e4e']);
+    band(p, 780, 14, .014, 1.6, '#2f4848', [300, 600, 850], ['#365454', '#283e3e']);
+    rex(p, 40, 380, 1.6, false, DCOL.purple, witchHat);
+    p.at(380, 470, 1, 30); p.add(pRR(-8, -10, 16, 260, 8), '#9b6a4f'); p.pop();
+    drawCauldron(p, 640, 690, 1.35);
+    mushroom(p, 180, 940, .8, '#ff6b6b', '#ffffff', '#fff1d6'); mushroom(p, 900, 950, .7, '#b48cf0', '#ffffff', '#fff1d6');
+    bat(p, 520, 140, .8); bat(p, 700, 230, .6);
+    for (let i = 0; i < 8; i++) p.add(pStar(p.R(480, 820), p.R(260, 420), p.R(10, 16), 5), '#c4f0b0');
+  } },
+  { id: 'spider', name: 'Spider Web', tag: '🎃', build: p => {
+    NIGHT(p, ['#2a1a4a', '#32205a', '#24163f', '#3b2563', '#462d73', '#4f2f78', '#5a3688']);
+    p.add(pC(860, 140, 70), '#fff3c8');
+    drawWeb(p, 470, 400, 330, 10, 5, ['#5a3d86', '#6a4a98'], '#e8e0f5');
+    drawSpider(p, 470, 470, 1.7, '#7d52c4', '#e8e0f5');
+    band(p, 830, 18, .012, .5, '#3d5a5a', [200, 480, 760], ['#466866', '#344e4e']);
+    pumpkin(p, 160, 880, 1.2, true); pumpkin(p, 840, 890, 1.1, true); pumpkin(p, 480, 940, .8, true);
+    bat(p, 860, 300, .7); bat(p, 120, 120, .7);
+  } },
+  { id: 'owls', name: 'Night Owls', tag: '🎃', build: p => {
+    NIGHT(p, ['#24153f', '#2c1a4c', '#1f1236', '#3a2363', '#442a72', '#5a3488', '#653c96']);
+    p.add(pC(720, 260, 170), '#ffe9a8'); p.add(pC(720, 260, 130), '#fff3c8'); [[680, 220, 22], [770, 300, 16]].forEach(q => p.add(pC(q[0], q[1], q[2]), '#f2dfa3'));
+    starsAround(p, 14, 720, 260, 210, 520);
+    p.add('M-20 560 C200 500 420 540 620 500 C760 470 900 480 1020 440 L1020 490 C900 530 760 520 620 550 C420 590 200 550 -20 610Z', '#7a4f37');
+    p.add('M600 520 C640 470 700 440 760 430 L766 446 C710 456 656 486 620 530Z', '#7a4f37');
+    for (let i = 0; i < 14; i++) { const x = 40 + i * 70, y = 530 - i * 6 + (i % 2 ? 26 : -20); p.at(x, y, 1, i * 40); p.add(pE(0, 0, 14, 26), ['#ff8a3d', '#ffd23d', '#ff6b6b'][i % 3]); p.pop(); }
+    drawOwl(p, 300, 438, 1.45, '#a77be8', '#f3e6ff', '#7d52c4'); drawOwl(p, 520, 450, 1.1, '#ffb070', '#fff1d6', '#e0803f');
+    band(p, 820, 16, .013, 1.2, '#4f7a43', [250, 550, 850], ['#5c8a4e', '#436a39']);
+    pumpkin(p, 180, 900, 1.1, true); pumpkin(p, 800, 910, 1.0, false); pumpkin(p, 500, 950, .7, true);
+    for (let i = 0; i < 8; i++) { p.at(p.R(60, 940), p.R(640, 800), 1, p.R(0, 180)); p.add(pE(0, 0, 12, 22), ['#ff8a3d', '#ffd23d', '#ff6b6b'][i % 3]); p.pop(); }
+  } }
+];
+
+const MORE = [
+  { id: 'picnic', name: 'Dino Picnic', build: p => {
+    band(p, 0, 0, 0, 0, '#bfe6ff', [300, 650], ['#cdeeff', '#b2ddf8']);
+    band(p, 280, 12, .01, 1, '#d7f0ff', [200, 600], ['#e4f6ff', '#c9e9fb']);
+    sun(p, 140, 130, 60, 10, '#ffd27a', '#ffe39f', '#fff0c4', '#ffe08a'); cloud(p, 520, 140, .8, '#ffffff', '#eef4ff');
+    band(p, 470, 18, .01, .5, '#9fe39b', [200, 450, 700], ['#afe9aa', '#8fd88c']);
+    tree(p, 830, 620, 1.2, '#9b6a4f', ['#5fb874', '#7fd38f', '#4fa36a'], '#ff6b6b');
+    band(p, 600, 14, .013, 1.4, '#7fd38f', [250, 550, 850], ['#8fdc8f', '#6fc77f']);
+    drawBlanket(p, 480, 700, 520, 760, 260, 8, 4, '#ff6b6b', '#fff7f3');
+    drawBasket(p, 470, 760, 1.1); drawWatermelon(p, 660, 800, 1, 180);
+    p.add(pPL([[260, 860], [340, 820], [340, 880]]), '#fff1d6'); p.add(pPL([[262, 866], [338, 828], [338, 838], [262, 876]]), '#7fd38f');
+    rex(p, 30, 470, 1.25, false, DCOL.pink); trike(p, 640, 520, 2.8, false, { ...DCOL.teal, spike: '#ffb070' });
+    butterfly(p, 300, 250, .8, '#ff8fc2', '#ffb070', '#ffd27a', '#5a2f72', -10); butterfly(p, 640, 330, .7, '#6fb2ff', '#a77be8', '#ffffff', '#5a2f72', 12);
+  } },
+  { id: 'bgarden', name: 'Butterfly Garden', build: p => {
+    band(p, 0, 0, 0, 0, '#ffe5ef', [250, 500, 750], ['#ffeef4', '#ffd9e8']);
+    band(p, 260, 12, .011, 0, '#f0e6ff', [350, 700], ['#f6efff', '#e6d9ff']);
+    sun(p, 860, 120, 56, 10, '#ffd27a', '#ffe39f', '#fff0c4', '#ffe08a');
+    band(p, 560, 18, .01, .4, '#9fe39b', [200, 450, 700, 900], ['#afe9aa', '#8fd88c']);
+    band(p, 720, 14, .014, 1.6, '#7fd38f', [300, 600, 850], ['#8fdc8f', '#6fc77f']);
+    [[100, 620, '#ff8fc2', '#ffd27a'], [230, 680, '#ffd27a', '#ff6b6b'], [370, 640, '#b48cf0', '#ffffff'], [520, 700, '#6fb2ff', '#ffd27a'], [660, 630, '#ff6b6b', '#ffd27a'], [800, 690, '#ff8fc2', '#ffffff'], [920, 640, '#ffb070', '#ffd27a'], [170, 820, '#b48cf0', '#ffd27a'], [450, 840, '#ff8fc2', '#ffd27a'], [760, 840, '#ffd27a', '#ff6b6b']].forEach(f => flower(p, f[0], f[1], .95, f[2], f[3], 6));
+    [[180, 300, 1.1, '#ff8fc2', '#ffb070', -12], [460, 230, .9, '#6fb2ff', '#a77be8', 10], [700, 330, 1.0, '#ffd27a', '#ff6b6b', -6], [330, 480, .7, '#7fd38f', '#6fb2ff', 15], [850, 470, .75, '#b48cf0', '#ff8fc2', -15], [600, 500, .6, '#ffb070', '#ffd27a', 8]].forEach(b => butterfly(p, b[0], b[1], b[2], b[3], b[4], '#ffffff', '#5a2f72', b[5]));
+  } },
+  { id: 'sunflowers', name: 'Sunflower Field', build: p => {
+    band(p, 0, 0, 0, 0, '#bfe6ff', [300, 650], ['#cdeeff', '#b2ddf8']);
+    sun(p, 160, 140, 64, 12, '#ffd27a', '#ffe39f', '#fff0c4', '#ffe08a'); cloud(p, 600, 130, .9, '#ffffff', '#eef4ff'); cloud(p, 880, 260, .6, '#ffffff', '#eef4ff');
+    band(p, 420, 16, .01, 1, '#9fe39b', [250, 600, 850], ['#afe9aa', '#8fd88c']);
+    longneck(p, 560, 140, 4.4, true, DCOL.green);
+    band(p, 640, 14, .012, .3, '#6fc77f', [200, 450, 700], ['#7fd38f', '#5fb874']);
+    [[120, 560, 1.5], [330, 520, 1.7], [760, 600, 1.4], [920, 520, 1.6], [230, 760, 1.2], [480, 780, 1.3], [700, 800, 1.2]].forEach(([x, y, s]) => flower(p, x, y, s, '#ffd23d', '#9b6a4f', 12, '#ffe066', '#4fa37f', '#7fd38f'));
+    drawBee(p, 420, 330, 1.3, -10); drawBee(p, 620, 470, 1.1, 12); drawBee(p, 850, 380, 1.0, -6);
+  } },
+  { id: 'balloons', name: 'Balloon Ride', build: p => {
+    band(p, 0, 0, 0, 0, '#ffd6e8', [280, 620], ['#ffe0ee', '#ffcade']);
+    band(p, 200, 12, .011, 0, '#ffe5d4', [200, 500, 800], ['#ffeee2', '#ffdac6']);
+    band(p, 420, 12, .012, 1, '#e0f0ff', [350, 700], ['#ecf6ff', '#d4e9fb']);
+    cloud(p, 150, 300, 1, '#ffffff', '#f4eefc'); cloud(p, 840, 180, .9, '#ffffff', '#f4eefc'); cloud(p, 640, 560, .7, '#ffffff', '#f4eefc');
+    mountain(p, 160, 860, 420, 300, '#b48cf0', '#9a6ee0', '#ffffff'); mountain(p, 820, 860, 460, 340, '#c9a6ff', '#ad86ee', '#ffffff');
+    band(p, 800, 16, .012, .5, '#8fdc8f', [200, 450, 700, 900], ['#9fe39b', '#7fcf82']);
+    drawAirBalloon(p, 420, 330, 1.45, ['#ff6b6b', '#ffd27a', '#ff8fc2', '#fff7f3']);
+    rex(p, 336, 520, .5, false, DCOL.purple);
+    drawAirBalloon(p, 820, 420, .7, ['#6fb2ff', '#fff7f3', '#7fd8c3', '#ffd27a']); drawAirBalloon(p, 140, 560, .55, ['#a77be8', '#ffd27a', '#ff8fc2', '#fff7f3']);
+  } },
+  { id: 'icecream', name: 'Ice Cream Day', build: p => {
+    const SC = ['#ffe0ec', '#fff1c9', '#e0f0ff', '#d8f3ea'];
+    for (let i = 0; i < 10; i++) p.add(pRR(i * 100, 0, 100, 1000, 0), SC[i % 4]);
+    for (let i = 0; i < 12; i++) heartAt(p, p.R(40, 960), p.R(30, 300), p.R(30, 60), ['#ff8fc2', '#ffb070', '#a77be8'][i % 3]);
+    p.add(pRR(0, 820, 1000, 180, 0), '#c98b5e'); p.add(pRR(0, 820, 1000, 30, 0), '#e8b07e');
+    drawCone(p, 700, 520, 1.15, ['#ff9fc8', '#fff1d6', '#9b6a4f']);
+    drawCone(p, 900, 640, .55, ['#7fd8c3', '#ffd27a']);
+    rex(p, 20, 420, 1.85, false, DCOL.blue);
+    p.add('M380 540 Q420 560 430 530 Q426 520 410 526Z', '#ff8fc2');
+  } },
+  { id: 'snow', name: 'Snow Day', build: p => {
+    band(p, 0, 0, 0, 0, '#cfe6ff', [300, 650], ['#dcefff', '#c0ddfa']);
+    band(p, 240, 12, .011, 0, '#e0efff', [200, 500, 800], ['#ecf6ff', '#d4e9fb']);
+    for (let i = 0; i < 12; i++) drawSnowflake(p, p.R(40, 960), p.R(40, 420), p.R(14, 28), '#ffffff', '#cfe6ff');
+    mountain(p, 200, 600, 460, 320, '#9fb8e6', '#88a4d8', '#ffffff'); mountain(p, 760, 600, 520, 380, '#b2c8ef', '#9ab4e4', '#ffffff');
+    band(p, 560, 22, .01, .4, '#f4f8ff', [200, 450, 700, 900], ['#ffffff', '#e6eefc']);
+    band(p, 760, 16, .014, 1.6, '#e6eefc', [300, 600, 850], ['#f4f8ff', '#d9e4f8']);
+    pine(p, 90, 700, 1.1, '#4f8a6a', '#5f9c7a', '#7a4f37'); pine(p, 930, 720, 1.2, '#4f8a6a', '#5f9c7a', '#7a4f37');
+    [[90, 700, 1.1], [930, 720, 1.2]].forEach(([x, y, s]) => [[-115, 54], [-60, 72], [0, 90]].forEach(([dy, w]) => p.add(pPL([[x - w * .55 * s, y + (dy - 6) * s], [x, y + (dy - (dy === -115 ? 72 : dy === -60 ? 96 : 120) * .55) * s], [x + w * .55 * s, y + (dy - 6) * s], [x, y + (dy + 8) * s]]), '#ffffff')));
+    drawSnowman(p, 760, 760, 1.1);
+    rex(p, 120, 520, 1.6, false, { ...DCOL.purple }, scarfHat);
+  } },
+  { id: 'wreath', name: 'Flower Wreath', build: p => {
+    const TC = ['#ffe0ec', '#e8dcff', '#d8f3ea', '#fff1c9'];
+    for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) p.add(pRR(c * 200, r * 200, 200, 200, 0), TC[(r + c) % 4]);
+    p.add(pC(500, 500, 400), '#fff7f3');
+    for (let i = 0; i < 28; i++) { const a = i / 28 * 360; p.at(500 + Math.cos(a * D2R) * 330, 500 + Math.sin(a * D2R) * 330, 1, a); p.add(pE(0, 0, 34, 70), ['#5fb874', '#7fd38f', '#4fa36a'][i % 3]); p.pop(); }
+    for (let i = 0; i < 10; i++) { const a = (i / 10 * 360 + 18) * D2R; drawBlossom(p, 500 + Math.cos(a) * 330, 500 + Math.sin(a) * 330, 1.5, ['#ff8fc2', '#ffd27a', '#b48cf0', '#ff6b6b', '#6fb2ff'][i % 5], '#ffd23d', 6, ['#ffb3d1', '#ffe39f', '#d0b8f6', '#ff9a9a', '#9fcbff'][i % 5]); }
+    p.at(500, 840, 1.2); p.add('M0 0 C-60 -50 -110 -20 -100 20 C-90 50 -40 30 0 0Z', '#ff6b6b'); p.add('M0 0 C60 -50 110 -20 100 20 C90 50 40 30 0 0Z', '#ff6b6b'); p.add(pPL([[-6, 4], [-50, 90], [-24, 84]]), '#ff8fc2'); p.add(pPL([[6, 4], [50, 90], [24, 84]]), '#ff8fc2'); p.add(pC(0, 2, 18), '#ff8fc2'); p.pop();
+    rex(p, 270, 290, 1.9, false, DCOL.purple);
+  } },
+  { id: 'rain', name: 'Rainy Day', build: p => {
+    band(p, 0, 0, 0, 0, '#c9d6ea', [300, 650], ['#d5e0f0', '#bccbe2']);
+    band(p, 250, 12, .011, 0, '#d6e2f2', [200, 500, 800], ['#e2ebf7', '#cbd8ec']);
+    cloud(p, 200, 130, 1.3, '#a9b8d4', '#97a8c8'); cloud(p, 620, 100, 1.2, '#b4c2dc', '#a2b2d0'); cloud(p, 900, 220, .9, '#a9b8d4', '#97a8c8');
+    rainbow(p, 860, 560, 120, 18, ['#ff6b6b', '#ffb070', '#ffd27a', '#7fd38f', '#6fb2ff', '#a77be8'], 2);
+    for (let i = 0; i < 22; i++) drawRaindrop(p, p.R(40, 960), p.R(240, 600), p.R(.8, 1.3), i % 2 ? '#6fb2ff' : '#8fc4ff');
+    band(p, 640, 16, .012, .4, '#8fdc8f', [200, 450, 700, 900], ['#9fe39b', '#7fcf82']);
+    band(p, 800, 12, .015, 1.6, '#6fc77f', [300, 600, 850], ['#7fd38f', '#5fb874']);
+    [[200, 900, 120, 26], [520, 940, 150, 30], [840, 900, 110, 24]].forEach(([x, y, rx, ry]) => { p.add(pE(x, y, rx, ry), '#8fc4ff'); p.add(pE(x - rx * .3, y - ry * .2, rx * .35, ry * .3), '#cfe6ff'); });
+    drawUmbrella(p, 470, 400, 1.15, ['#ffd23d', '#ff6b6b']);
+    rex(p, 250, 470, 1.6, false, DCOL.green, bootsUmb);
+    flower(p, 820, 770, .8, '#ff8fc2', '#ffd27a'); flower(p, 920, 800, .7, '#b48cf0', '#ffd27a');
+  } },
+  { id: 'train', name: 'Dino Train', build: p => {
+    band(p, 0, 0, 0, 0, '#bfe6ff', [300, 650], ['#cdeeff', '#b2ddf8']);
+    sun(p, 870, 130, 56, 10, '#ffd27a', '#ffe39f', '#fff0c4', '#ffe08a');
+    [[120, 270, .9], [280, 200, 1.1], [420, 150, 1.3]].forEach(([x, y, s]) => p.add(pC(x, y, 34 * s), '#ffffff'));
+    mountain(p, 220, 560, 480, 300, '#b48cf0', '#9a6ee0', '#ffffff'); mountain(p, 760, 560, 520, 340, '#c9a6ff', '#ad86ee', '#ffffff');
+    band(p, 520, 16, .01, .5, '#9fe39b', [200, 450, 700, 900], ['#afe9aa', '#8fd88c']);
+    p.add(pRR(0, 770, 1000, 18, 0), '#9b6a4f');
+    for (let i = 0; i < 17; i++) p.add(pRR(i * 62 - 10, 788, 36, 22, 3), '#7a4f37');
+    band(p, 830, 12, .015, 1.6, '#7fd38f', [300, 600, 850], ['#8fdc8f', '#6fc77f']);
+    stego(p, 300, 556, 1.9, false, DCOL.orange); trike(p, 556, 548, 1.9, false, DCOL.pink);
+    drawTrainCar(p, 290, 640, 200, 110, '#ffd27a', '#ff6b6b'); drawTrainCar(p, 540, 640, 200, 110, '#7fd8c3', '#6fb2ff');
+    drawEngine(p, 790, 700);
+    longneck(p, 50, 380, 3.0, false, DCOL.blue); drawTrainCar(p, 40, 640, 200, 110, '#b48cf0', '#ffd27a');
+  } },
+  { id: 'pond', name: 'Lily Pond', build: p => {
+    band(p, 0, 0, 0, 0, '#d9f2ff', [300, 650], ['#e5f7ff', '#cdeefc']);
+    band(p, 200, 16, .012, 0, '#7fcf82', [200, 500, 800], ['#8fd88c', '#6fc77f']);
+    [[100, 210, 60], [260, 190, 74], [740, 200, 68], [900, 220, 58]].forEach(([x, y, r], i) => p.add(pC(x, y, r), i % 2 ? '#5fb874' : '#4fa36a'));
+    band(p, 280, 10, .012, 1, '#8fd3ff', [300, 700], ['#9fdcff', '#7fcaf8']);
+    band(p, 430, 12, .011, 2, '#6fc0f5', [200, 500, 800], ['#7fcaf8', '#5fb2ee']);
+    band(p, 600, 12, .012, 3, '#5fb2ee', [350, 700], ['#6fc0f5', '#4fa8e8']);
+    band(p, 770, 12, .013, 1, '#4fa8e8', [250, 600, 850], ['#5fb2ee', '#3f9ce0']);
+    longneck(p, 520, 300, 3.6, true, DCOL.teal);
+    [[150, 520, 70, 30], [320, 680, 80, 300], [120, 840, 60, 120], [700, 820, 74, 200], [880, 640, 64, 60], [540, 900, 56, 260], [860, 900, 50, 20]].forEach(([x, y, r, a], i) => p.add(pPie(x, y, r, a, a + 320), i % 2 ? '#5fb874' : '#7fd38f'));
+    drawLotus(p, 150, 500, 1.2, '#ff8fc2', '#ffb3d1'); drawLotus(p, 700, 800, 1.1, '#fff7f3', '#ffd9e8'); drawLotus(p, 330, 660, .9, '#ffb3d1', '#ff8fc2');
+    drawDragonfly(p, 240, 380, 1.1, '#6f7dff', '#e6f2ff', 70); drawDragonfly(p, 820, 420, .9, '#ff8fc2', '#fff0f6', -60);
+    [[40, 1000, 1, 300], [80, 1000, 1, 240], [960, 1000, 1, 280]].forEach(([x, y, s, h]) => drawCattail(p, x, y, s, h));
+  } },
+  { id: 'space', name: 'Space Dino', build: p => {
+    band(p, 0, 0, 0, 0, '#1f1236', [250, 520, 780], ['#2a1a48', '#24153f']);
+    band(p, 330, 12, .01, 0, '#2e1a50', [180, 460, 740], ['#3a2363', '#291747']);
+    band(p, 660, 12, .012, 1, '#3a2363', [320, 640], ['#462d73', '#331f57']);
+    for (let i = 0; i < 26; i++) p.add(pStar(p.R(30, 970), p.R(30, 970), p.R(8, 18)), i % 3 ? '#ffd27a' : '#fff3c8');
+    drawPlanet(p, 790, 210, 90, '#ffb070', '#ff8a5c', '#ffd27a'); drawPlanet(p, 170, 820, 70, '#7fd8c3', '#5fc4ae', '#c9a6ff');
+    p.add(pC(160, 160, 60), '#e8e0f5'); [[140, 140, 12], [180, 180, 9]].forEach(q => p.add(pC(q[0], q[1], q[2]), '#cfc4e6'));
+    drawRocket(p, 760, 640, 1.2, '#fff7f3', '#ff6b6b');
+    rex(p, 160, 330, 1.7, false, DCOL.purple, helmet);
+  } },
+  { id: 'monarch', name: 'Monarch', build: p => {
+    const TC = ['#fff1c9', '#ffe0ec', '#e0f0ff'];
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) p.add(pE(c * 125 + 62, r * 125 + 62, 60, 60), TC[(r + c) % 3]);
+    drawMonarch(p, 500, 520, 1.55, ['#ff8a3d', '#ffb070', '#ffd27a', '#ff6b6b'], '#3b2a55', '#ffffff');
+  } },
+  { id: 'tulips', name: 'Tulip Fields', build: p => {
+    band(p, 0, 0, 0, 0, '#bfe6ff', [300, 650], ['#cdeeff', '#b2ddf8']);
+    cloud(p, 240, 140, .9, '#ffffff', '#eef4ff'); cloud(p, 720, 110, .7, '#ffffff', '#eef4ff');
+    band(p, 380, 10, .01, .5, '#9fe39b', [300, 700], ['#afe9aa', '#8fd88c']);
+    drawWindmill(p, 760, 470, 1.05, 20);
+    const rows = [[470, 52, '#ff6b6b', .6], [540, 64, '#ffd23d', .75], [625, 78, '#ff8fc2', .9], [725, 96, '#a77be8', 1.05], [845, 120, '#ff9a3d', 1.25]];
+    rows.forEach(([y, h, c, s], i) => {
+      p.add(pPL([[0, y], [1000, y], [1000, y + h], [0, y + h]]), shade(c, .82));
+      p.add(pPL([[0, y + h - 10 * s], [1000, y + h - 10 * s], [1000, y + h], [0, y + h]]), '#5fb874');
+      const n = Math.round(10 / s); for (let k = 0; k < n; k++) drawTulip(p, (k + .5) * 1000 / n + (i % 2 ? 30 : 0), y + h * .45, s * 1.1, c);
+    });
+  } },
+  { id: 'hatch', name: 'Baby Dinos', build: p => {
+    p.add(pRR(0, 0, 1000, 1000, 0), '#fff7f3');
+    const TC = ['#ffe0ec', '#e8dcff', '#d8f3ea', '#fff1c9'];
+    for (let r = 0; r < 6; r++) for (let c = 0; c < 10; c++) p.add(pRR(c * 100 + 6, r * 100 + 6, 88, 88, 20), TC[(r + c) % 4]);
+    flower(p, 90, 560, 1.0, '#ff8fc2', '#ffd27a', 8, '#ffb3d1'); flower(p, 910, 560, 1.0, '#b48cf0', '#ffd27a', 8, '#d0b8f6');
+    drawHatchEgg(p, 300, 600, 2.0, '#ffd27a', '#fff1c9', { body: '#7fd38f', spike: '#ffb070', cheek: '#ff9fb0' });
+    drawHatchEgg(p, 700, 600, 2.0, '#8fc4ff', '#e6f2ff', { body: '#ff9fc8', spike: '#a77be8', cheek: '#ff6f9f' });
+    drawHatchEgg(p, 500, 540, 2.3, '#c9a6ff', '#f3e6ff', { body: '#b48cf0', spike: '#ff8fc2', cheek: '#ff8fc2' });
+    p.add('M110 660 C120 900 320 985 500 985 C680 985 880 900 890 660 C700 720 300 720 110 660Z', '#c98b5e');
+    for (let k = 0; k < 5; k++) { const y = 720 + k * 50; p.add(`M${130 + k * 18} ${y} C300 ${y + 40} 700 ${y + 40} ${870 - k * 18} ${y} L${862 - k * 18} ${y + 24} C700 ${y + 62} 300 ${y + 62} ${138 + k * 18} ${y + 24}Z`, k % 2 ? '#b07448' : '#dba06c'); }
+    p.add('M110 660 C300 720 700 720 890 660 C880 690 700 748 500 748 C300 748 120 690 110 660Z', '#e8b07e');
+    heartAt(p, 200, 230, 90, '#ff6f9f'); heartAt(p, 800, 220, 80, '#ff8fc2'); heartAt(p, 500, 140, 60, '#ff6f9f');
+  } },
+  { id: 'beach', name: 'Beach Day', build: p => {
+    band(p, 0, 0, 0, 0, '#bfe6ff', [300, 650], ['#cdeeff', '#b2ddf8']);
+    band(p, 200, 12, .011, 0, '#d7f0ff', [250, 600, 850], ['#e4f6ff', '#c9e9fb']);
+    sun(p, 830, 140, 62, 12, '#ffd27a', '#ffe39f', '#fff0c4', '#ffe08a'); cloud(p, 260, 130, .9, '#ffffff', '#eef4ff');
+    band(p, 380, 12, .015, 0, '#5fb2ee', [250, 600, 850], ['#6fc0f5', '#4fa8e8']);
+    band(p, 460, 14, .018, 1, '#7fcaf8', [200, 500, 800], ['#8fd3ff', '#6fc0f5']);
+    band(p, 540, 16, .02, 2, '#9fdcff', [350, 700], ['#b2e4ff', '#8fd3ff']);
+    band(p, 610, 18, .016, 1, '#ffe0a8', [200, 450, 700, 900], ['#ffe9bf', '#ffd38f']);
+    drawUmbrella(p, 180, 650, 1.2, ['#ff6b6b', '#fff7f3'], '#9b6a4f', -8);
+    drawCastle(p, 640, 900, 1.05, '#f5c48f', '#e8b07e', '#c98b5e');
+    stego(p, 160, 640, 3.0, false, DCOL.green);
+    drawBucket(p, 900, 900, .9, '#ff8fc2', '#ff6b6b');
+    drawStarfish(p, 420, 930, 40, '#ff9a6b', '#ffb38a'); drawStarfish(p, 900, 700, 30, '#ff8fc2', '#ffb3d1', -60);
+    drawShell(p, 520, 960, 1, '#fff3e6', '#ffd9c4'); drawShell(p, 90, 950, .9, '#ffe0ec', '#ffb3d1');
+  } }
+];
+HALLOWEEN2.forEach((h, i) => { h.seed = 1501 + i * 13; });
+MORE.forEach((h, i) => { h.seed = 1701 + i * 11; });
+PICS.splice(HALLOWEEN.length, 0, ...HALLOWEEN2);
+PICS.push(...MORE);
+
 /* Merge near-identical shades so each picture has at most 20 numbered colors. */
 function mergeColors(regs, maxColors = 20) {
   const rgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16, n >> 8 & 255, n & 255]; };
@@ -2891,7 +3400,7 @@ function openCBN(pic) {
     const iv = setInterval(() => { if (filled.has(bi)) { clearInterval(iv); return; } pth.setAttribute('fill', n % 2 ? SELFILL : r.c); if (++n >= 7) { clearInterval(iv); pth.setAttribute('fill', SELFILL); } }, 280);
     timers.push(iv);
     const l = labels[bi]; if (l) restart(l, 'pulse');
-    sfx.chime(); speak(`Look here! Tap number ${r.num + 1}.`);
+    sfx.chime(); speak(`Look here! Tap number ${r.num + 1}.`, true);
   }
   hintBtn.addEventListener('click', help);
   /* If she hasn't filled anything for a while, the Help button glows. */
