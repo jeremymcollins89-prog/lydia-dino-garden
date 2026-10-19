@@ -3,12 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="description" content="A calm learning and creativity game for little kids. No accounts, works offline.">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Dino Garden">
 <meta name="theme-color" content="#2e1a47">
+<link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>Lydia's Dino Garden</title>
+<link rel="icon" type="image/png" href="icon-512.png">
+<title>Dino Garden</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -55,6 +58,20 @@ button:focus-visible{outline:4px solid var(--gold);outline-offset:4px}
 #homeBtn{left:max(18px,calc(env(safe-area-inset-left,0px) + 18px))}
 #soundBtn{right:max(18px,calc(env(safe-area-inset-right,0px) + 18px))}
 #soundBtn.off{opacity:.55}
+#setBtn{right:calc(max(18px,calc(env(safe-area-inset-right,0px) + 18px)) + 80px)}
+#setBtn.needs::after{content:"";position:absolute;top:4px;right:4px;width:14px;height:14px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 3px rgba(46,26,71,.6);animation:ring 1.6s ease-in-out infinite}
+.name .sp{width:.35em}
+.set-input{height:56px;border-radius:16px;border:2px solid rgba(255,247,243,.35);background:rgba(255,247,243,.12);color:var(--cream);font:600 22px var(--display);padding:0 16px;outline:none;-webkit-user-select:text;user-select:text;touch-action:manipulation}
+.set-input:focus{border-color:var(--gold)}
+.set-input.bad{animation:wiggle .5s ease-in-out;border-color:#ff6b6b}
+.gate-q{font-size:40px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums}
+.set-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.vp-done.soft{background:rgba(255,247,243,.14);color:var(--cream)}
+.set-label{font-size:15px;font-weight:600;opacity:.9;margin-bottom:-4px}
+.set-sep{height:1px;background:rgba(255,247,243,.2);margin:4px 0}
+.set-danger{align-self:center;height:44px;padding:0 20px;border-radius:999px;border:2px solid rgba(255,140,140,.6);color:#ffc2c2;font-weight:600;font-size:15px}
+.set-danger.armed{background:#ff6b6b;color:#fff;border-color:#ff6b6b}
+.set-foot{font-size:13px;opacity:.75;text-align:center;line-height:1.35}
 
 /* ---------- dino ---------- */
 .dino{display:block;overflow:visible;filter:drop-shadow(0 18px 18px rgba(20,6,38,.35))}
@@ -260,10 +277,15 @@ button:focus-visible{outline:4px solid var(--gold);outline-offset:4px}
 .cbn-top{display:flex;align-items:center;gap:12px;flex:none}
 .cbn-pct{min-width:84px;text-align:center;font-weight:700;font-size:20px;font-variant-numeric:tabular-nums}
 .cbn-view{flex:1;min-height:0;width:100%;position:relative;overflow:hidden;border-radius:28px;background:rgba(255,247,243,.1);border:2px solid var(--glass-edge);touch-action:none}
-.cbn-inner{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
-.cbn-inner svg{width:100%;height:100%;display:block;background:#fff;border-radius:6px;box-shadow:0 16px 40px rgba(20,6,38,.35)}
-.cbn-inner text{font-family:var(--display);font-weight:600;pointer-events:none;dominant-baseline:central}
-.cbn-inner .lbl.sel{fill:#3b2a55;font-weight:700}
+.cbn-inner{position:absolute;inset:0}
+.cbn-inner svg{width:100%;height:100%;display:block;shape-rendering:geometricPrecision;text-rendering:geometricPrecision}
+.cbn-inner text{font-family:var(--display);font-weight:600;pointer-events:none;dominant-baseline:central;paint-order:stroke;stroke-linejoin:round}
+.cbn-inner .lbl.sel{fill:#2e1a47;font-weight:700}
+.hintbtn{height:58px;padding:0 20px 0 14px;border-radius:999px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:19px;
+  background:var(--glass);border:2px solid var(--glass-edge);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.hintbtn .emoji{font-size:26px}
+.hintbtn:active{transform:scale(.94)}
+.hintbtn.glow{background:var(--gold);color:var(--plum-deep);border-color:var(--gold);animation:ring 1.4s ease-in-out infinite}
 .cbn-inner .lbl.pulse{animation:lblpulse .9s ease-in-out 3}
 @keyframes lblpulse{50%{fill:#ff5fa2}}
 .cbn-tools{position:absolute;right:12px;top:12px;display:flex;flex-direction:column;gap:10px;z-index:2}
@@ -446,6 +468,9 @@ button:focus-visible{outline:4px solid var(--gold);outline-offset:4px}
 </button>
 <button id="soundBtn" class="ui-btn" aria-label="Background music on or off">
   <svg viewBox="0 0 40 40"><path d="M15 29 V11 L31 7 V25" stroke="#fff7f3" stroke-width="3.5" fill="none" stroke-linejoin="round" stroke-linecap="round"/><ellipse cx="11" cy="29" rx="5" ry="4" fill="#fff7f3"/><ellipse cx="27" cy="25" rx="5" ry="4" fill="#fff7f3"/><path id="slash" d="M6 6 L34 34" stroke="#ff8fc2" stroke-width="4" stroke-linecap="round" opacity="0"/></svg>
+</button>
+<button id="setBtn" class="ui-btn" aria-label="Settings for grown-ups">
+  <svg viewBox="0 0 40 40"><path d="M20 4.5 l3 4.2 5-1.2 1 5 5 1.4-1.5 4.9 3.6 3.6-4 3.2 .9 5-5 .8-1.9 4.8-4.6-2.2-4.6 2.2-1.9-4.8-5-.8.9-5-4-3.2 3.6-3.6L5.5 13.9l5-1.4 1-5 5 1.2z" fill="#fff7f3"/><circle cx="20" cy="20" r="6" fill="#5a3488"/></svg>
 </button>
 <svg class="room-star" id="roomStar" aria-hidden="true"><use href="#star"/></svg>
 
@@ -801,17 +826,33 @@ const centerOf = el => { const r = el.getBoundingClientRect(); return [r.left + 
 function bigCelebrate(el) { const [x, y] = el ? centerOf(el) : [innerWidth / 2, innerHeight / 2]; sfx.fanfare(); burst(x, y, 70, 1.3); }
 
 /* ---------------- name letters ---------------- */
+/* The child's name lives only on this device. Devices that already have saved play keep "Lydia". */
+const hadPlay = ['lydia-learn', 'lydia-cbn', 'lydia-run-v2', 'lydia-match'].some(k => { try { return localStorage.getItem(k) != null; } catch (e) { return false; } });
+let kidName = store.get('dino-kid-name', null);
+if (kidName === null) { kidName = hadPlay ? 'Lydia' : ''; store.set('dino-kid-name', kidName); }
+const nm = (pre = ', ') => kidName ? pre + kidName : '';
 const LETTER_COLORS = ['#ff9cc8', '#ffd27a', '#c9a6ff', '#7fd8c3', '#ffb38a'];
 function buildName(box) {
   box.innerHTML = '';
-  'LYDIA'.split('').forEach((ch, i) => {
-    const s = document.createElement('span'); s.textContent = ch; s.style.color = LETTER_COLORS[i]; s.setAttribute('aria-hidden', 'true');
-    s.addEventListener('pointerdown', e => { e.preventDefault(); tone(SCALE[i + 3], 0, 1.2, .18); restart(s, 'bounce'); });
+  const text = (kidName || 'Dino Garden').toUpperCase(), len = text.length;
+  box.style.fontSize = `clamp(36px, min(14vmin, ${(86 / Math.max(5, len)).toFixed(1)}vw), 160px)`;
+  box.setAttribute('aria-label', kidName || 'Dino Garden');
+  let k = 0;
+  [...text].forEach(ch => {
+    const s = document.createElement('span'); s.setAttribute('aria-hidden', 'true');
+    if (ch === ' ') { s.className = 'sp'; box.appendChild(s); return; }
+    const i = k++; s.textContent = ch; s.style.color = LETTER_COLORS[i % LETTER_COLORS.length];
+    s.addEventListener('pointerdown', e => { e.preventDefault(); tone(SCALE[(i + 3) % SCALE.length], 0, 1.2, .18); restart(s, 'bounce'); });
     box.appendChild(s);
   });
 }
-function waveName(box) { $$('span', box).forEach((s, i) => setTimeout(() => { tone(SCALE[i + 3], 0, 1, .14); restart(s, 'bounce'); }, i * 160)); }
-buildName($('#hubName')); buildName($('#finaleName'));
+function waveName(box) { $$('span:not(.sp)', box).forEach((s, i) => setTimeout(() => { tone(SCALE[(i + 3) % SCALE.length], 0, 1, .14); restart(s, 'bounce'); }, i * 160)); }
+function applyName() {
+  buildName($('#hubName')); buildName($('#finaleName'));
+  document.title = kidName ? `${kidName}’s Dino Garden` : 'Dino Garden';
+  $('#hubDino').setAttribute('aria-label', kidName ? `${kidName}’s dinosaur` : 'Dinosaur');
+  $('#setBtn').classList.toggle('needs', !kidName);
+}
 
 /* ---------------- screens + travel ---------------- */
 const done = new Set();
@@ -1006,19 +1047,62 @@ function syncedSay(parts, gap = 1100) {
   const st = speakSeq(parts);
   later(() => { if (!st.started) parts.forEach((pt, i) => later(() => pt.on && pt.on(), i * gap)); }, 1600);
 }
+/* Settings for grown-ups: a small addition problem keeps little fingers out. */
+function openSettings() {
+  const ov = document.createElement('div'); ov.className = 'voice-ov';
+  document.body.appendChild(ov);
+  const close = () => ov.remove();
+  ov.addEventListener('click', e => { if (e.target === ov) close(); });
+  const a = 11 + rand(19), b = 11 + rand(19);
+  ov.innerHTML = `<div class="voice-panel panel"><div class="vp-title">For grown-ups</div><div class="vp-sub">Type the answer to open settings.</div><div class="gate-q">${a} + ${b} = ?</div><input id="gateIn" class="set-input" inputmode="numeric" pattern="[0-9]*" autocomplete="off" aria-label="Answer"><div class="set-row"><button class="vp-done soft" id="gCancel">Cancel</button><button class="vp-done" id="gOk">Open</button></div></div>`;
+  const gi = $('#gateIn', ov);
+  const tryOpen = () => { if (parseInt(gi.value, 10) === a + b) form(); else { restart(gi, 'bad'); gi.value = ''; } };
+  $('#gOk', ov).addEventListener('click', tryOpen);
+  gi.addEventListener('keydown', e => { if (e.key === 'Enter') tryOpen(); });
+  $('#gCancel', ov).addEventListener('click', close);
+  setTimeout(() => { try { gi.focus(); } catch (e) {} }, 50);
+  function form() {
+    ov.innerHTML = `<div class="voice-panel panel">
+      <div class="vp-title">Settings</div>
+      <div class="set-label">Child’s name</div>
+      <input id="kidIn" class="set-input" maxlength="14" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Name" aria-label="Child's name">
+      <div class="vp-sub">Shown on the home screen and said by the voice. Leave it empty for no name.</div>
+      <div class="set-row"><button class="vp-done soft" id="sVoice">Voice…</button><button class="vp-done" id="sSave">Save</button></div>
+      <div class="set-sep"></div>
+      <button class="set-danger" id="sReset">Reset all progress</button>
+      <div class="set-foot">No accounts and no tracking. Everything is saved only on this device, and the game works offline after it has been opened once.</div>
+    </div>`;
+    const ki = $('#kidIn', ov); ki.value = kidName;
+    const save = () => {
+      kidName = ki.value.replace(/[^\p{L}\p{M}' -]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 14);
+      store.set('dino-kid-name', kidName); applyName(); sfx.chime();
+      speak(kidName ? `Hi ${kidName}! Welcome to your Dino Garden!` : 'Welcome to Dino Garden!');
+      close();
+    };
+    $('#sSave', ov).addEventListener('click', save);
+    ki.addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
+    $('#sVoice', ov).addEventListener('click', () => { close(); voicePanel(); });
+    const rb = $('#sReset', ov);
+    rb.addEventListener('click', () => {
+      if (!rb.classList.contains('armed')) { rb.classList.add('armed'); rb.textContent = 'Tap again to erase all progress'; return; }
+      try { Object.keys(localStorage).filter(k => /^lydia-/.test(k) && k !== 'lydia-voice').forEach(k => localStorage.removeItem(k)); } catch (e) {}
+      location.reload();
+    });
+  }
+}
 function voicePanel() {
   const vs = englishVoices().slice(0, 10);
   const ov = document.createElement('div'); ov.className = 'voice-ov';
   ov.innerHTML = `<div class="voice-panel panel"><div class="vp-title">Pick a voice</div><div class="vp-sub">Tap one to hear it. The best ones say Natural, Enhanced or Premium.</div><div class="vp-list">${vs.length ? vs.map((v, i) => `<button class="vp-row ${voice && v.name === voice.name ? 'on' : ''}" data-i="${i}">${v.name.replace(/Microsoft |Google /, '').replace(/ - English.*| \(English.*\)/, '')}${isKidVoice(v) ? ' <b>kid voice</b>' : ''}</button>`).join('') : '<div class="vp-sub">No English voices found on this device.</div>'}</div><button class="vp-done">Done</button></div>`;
   document.body.appendChild(ov);
-  $$('.vp-row', ov).forEach(b => b.addEventListener('click', () => { voice = vs[+b.dataset.i]; store.set('lydia-voice', voice.name); $$('.vp-row', ov).forEach(q => q.classList.toggle('on', q === b)); speak('Hi Lydia! Let’s learn together!'); }));
+  $$('.vp-row', ov).forEach(b => b.addEventListener('click', () => { voice = vs[+b.dataset.i]; store.set('lydia-voice', voice.name); $$('.vp-row', ov).forEach(q => q.classList.toggle('on', q === b)); speak(`Hi${nm(' ')}! Let’s learn together!`); }));
   const close = () => ov.remove();
   $('.vp-done', ov).addEventListener('click', close);
   ov.addEventListener('click', e => { if (e.target === ov) close(); });
 }
 const hush = () => { try { speechSynthesis.cancel(); } catch (e) {} };
-const PRAISE = ['Great job!', 'You did it!', 'Yes! That’s right!', 'Wonderful!', 'Super, Lydia!', 'Way to go!', 'Perfect!', 'You’re so smart!'];
-const praise = () => PRAISE[rand(PRAISE.length)];
+const PRAISE = ['Great job!', 'You did it!', 'Yes! That’s right!', 'Wonderful!', 'Way to go!', 'Perfect!', 'You’re so smart!'];
+const praise = () => { const list = kidName ? [...PRAISE, `Super, ${kidName}!`, `Great job, ${kidName}!`] : PRAISE; return list[rand(list.length)]; };
 const NUMW = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
 const ONESW = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
 const numWord = n => n < 20 ? ONESW[n] : ['', '', 'twenty', 'thirty', 'forty'][Math.floor(n / 10)] + (n % 10 ? '-' + ONESW[n % 10] : '');
@@ -1036,8 +1120,9 @@ const ABC = [['A', 'apple', '🍎'], ['B', 'bear', '🐻'], ['C', 'cat', '🐱']
   ['I', 'ice cream', '🍦'], ['J', 'juice', '🧃'], ['K', 'kite', '🪁'], ['L', 'lion', '🦁'], ['M', 'moon', '🌙'], ['N', 'nose', '👃'], ['O', 'octopus', '🐙'], ['P', 'pig', '🐷'],
   ['Q', 'queen', '👸'], ['R', 'rainbow', '🌈'], ['S', 'sun', '☀️'], ['T', 'turtle', '🐢'], ['U', 'umbrella', '☂️'], ['V', 'volcano', '🌋'], ['W', 'whale', '🐳'], ['X', 'x-ray', '🩻'], ['Y', 'yo-yo', '🪀'], ['Z', 'zebra', '🦓']];
 const WORDS = [['cat', '🐱'], ['dog', '🐶'], ['sun', '☀️'], ['hat', '🎩'], ['pig', '🐷'], ['bus', '🚌'], ['bed', '🛏️'], ['cup', '☕'], ['fox', '🦊'], ['bee', '🐝'], ['cow', '🐮'], ['owl', '🦉'], ['ant', '🐜'], ['car', '🚗'], ['bat', '🦇'], ['egg', '🥚']];
-const LETTER_SAY = { a: 'ay', e: 'ee', i: 'eye', o: 'oh', u: 'you', y: 'why' };
-const letterName = l => LETTER_SAY[l.toLowerCase()] || l.toUpperCase();
+/* Letters are spoken lowercase and on their own ("e." then "is for egg"), so voices say the plain
+   letter name — no "capital", and "a" doesn't come out as "uh" or "eye". */
+const letterName = l => l.toLowerCase();
 const SHAPE_INFO = {
   circle: ['circle', 'A circle is round, round, round.'], square: ['square', 'A square has four sides, all the same size.'],
   triangle: ['triangle', 'A triangle has three sides.'], rectangle: ['rectangle', 'A rectangle has four sides. Two long, and two short.'],
@@ -1178,8 +1263,8 @@ function runBuild(ctx, rounds) {
     $$('.wtile', ctx.stage).forEach(t => t.addEventListener('click', () => {
       if (idx >= letters.length) return;
       if (t.dataset.l === letters[idx]) {
-        slots[idx].textContent = t.dataset.l; slots[idx].classList.add('filled'); t.classList.add('used'); tone(SCALE[idx + 3], 0, .5, .12); speak(letterName(t.dataset.l)); idx++;
-        if (idx === letters.length) { const [x, y] = centerOf(slots[1] || slots[0]); burst(x, y, 30, .8); sfx.snap(); later(() => speak(`${letters.map(letterName).join(', ')}. ${w}! ${praise()}`), 500); r++; ctx.dots(r, rounds); later(next, 3600); }
+        slots[idx].textContent = t.dataset.l; slots[idx].classList.add('filled'); t.classList.add('used'); tone(SCALE[idx + 3], 0, .5, .12); speak(letterName(t.dataset.l) + '.'); idx++;
+        if (idx === letters.length) { const [x, y] = centerOf(slots[1] || slots[0]); burst(x, y, 30, .8); sfx.snap(); later(() => speakSeq([...letters.map(l => ({ t: letterName(l) + '.', rate: .8 })), { t: `${w}! ${praise()}` }]), 500); r++; ctx.dots(r, rounds); later(next, 3600); }
       } else { restart(t, 'nope'); sfx.back(); speak(`Find the letter ${letterName(letters[idx])}.`); }
     }));
   };
@@ -1217,7 +1302,7 @@ function spellAlong(card, w) {
     clear();
     syncedSay([
       { t: w, rate: .85, on: all },
-      ...w.split('').map((l, i) => ({ t: letterName(l), rate: .72, on: () => { clear(); sp[i].classList.add('lit'); tone(SCALE[i + 3], 0, .3, .05); } })),
+      ...w.split('').map((l, i) => ({ t: letterName(l) + '.', rate: .72, on: () => { clear(); sp[i].classList.add('lit'); tone(SCALE[i + 3], 0, .3, .05); } })),
       { t: w + '!', rate: .85, on: all }
     ]);
     return `${w}. ${w.split('').map(letterName).join(', ')}. ${w}!`;
@@ -1255,12 +1340,12 @@ const LESSONS = [
   { id: 'nu-find30', unit: 'numbers', title: 'Numbers 1 to 30', glyph: emo('🏆'), run: ctx => { const all = Array.from({ length: 30 }, (_, i) => i + 1), dk = deckOf(all); runPick(ctx, 8, () => { const n = dk(); return { text: 'Listen, then find it!', say: `Find the number ${numWord(n)}.`, hint: `Try again! Find ${numWord(n)}.`, choiceClass: 'small', choices: numChoices(n, 1, 30).map(x => ({ html: String(x), ok: x === n, label: String(x) })) }; }); } },
   /* Letters */
   ...[['le-ah', 'Meet A to H', 0, 8], ['le-ip', 'Meet I to P', 8, 16], ['le-qz', 'Meet Q to Z', 16, 26]].flatMap(([id, title, a, b], gi) => {
-    const set = ABC.slice(a, b), meet = { id, unit: 'letters', title, glyph: `${set[0][0]}–${set[set.length - 1][0]}`, run: ctx => runMeet(ctx, set, ([L, w, e]) => `<div class="big">${L}${L.toLowerCase()}</div>${emo(e, 'big-e')}<div class="cap">${L} is for ${w}</div>`, ([L, w]) => `${letterName(L)} is for ${w}.`) };
-    const find = { id: id + '-find', unit: 'letters', title: `Find ${set[0][0]} to ${set[set.length - 1][0]}`, glyph: emo('🔍'), run: ctx => { const pool = set.map(s => s[0]), dk = deckOf(pool); runPick(ctx, 5, () => { const L = dk(); return { text: 'Listen, then find the letter!', say: `Find the letter ${letterName(L)}.`, hint: `Try again! Find ${letterName(L)}.`, choices: [L, ...others(pool, 2, [L])].map(x => ({ html: x, ok: x === L, label: x })) }; }); } };
+    const set = ABC.slice(a, b), meet = { id, unit: 'letters', title, glyph: `${set[0][0]}–${set[set.length - 1][0]}`, run: ctx => runMeet(ctx, set, ([L, w, e]) => `<div class="big">${L}${L.toLowerCase()}</div>${emo(e, 'big-e')}<div class="cap">${L} is for ${w}</div>`, ([L, w]) => () => { speakSeq([{ t: letterName(L) + '.', rate: .85 }, { t: `is for ${w}.` }]); return `${letterName(L)} is for ${w}.`; }) };
+    const find = { id: id + '-find', unit: 'letters', title: `Find ${set[0][0]} to ${set[set.length - 1][0]}`, glyph: emo('🔍'), run: ctx => { const pool = set.map(s => s[0]), dk = deckOf(pool); runPick(ctx, 5, () => { const L = dk(); return { text: 'Listen, then find the letter!', say: `Find the letter ${letterName(L)}.`, hint: `Try again! Find the letter ${letterName(L)}.`, choices: [L, ...others(pool, 2, [L])].map(x => ({ html: x, ok: x === L, label: x })) }; }); } };
     return [meet, find];
   }),
-  { id: 'le-case', unit: 'letters', title: 'Big and little', glyph: 'Aa', run: ctx => { const pool = ABC.map(a => a[0]), dk = deckOf(pool); runPick(ctx, 6, () => { const L = dk(); return { show: L, text: 'Find the little letter that matches.', say: `This is big ${letterName(L)}. Find little ${letterName(L)}.`, choices: [L, ...others(pool, 2, [L])].map(x => ({ html: x.toLowerCase(), ok: x === L, label: x.toLowerCase() })), onRight: `Little ${letterName(L)}!` }; }); } },
-  { id: 'le-sounds', unit: 'letters', title: 'First sounds', glyph: emo('🐻'), run: ctx => { const dk = deckOf(ABC.filter(a => a[0] !== 'X')); runPick(ctx, 6, () => { const [L, w, e] = dk(); const opts = others(ABC, 2, ABC.filter(a => a[0] === L || a[0] === 'X')); return { show: L + L.toLowerCase(), text: 'Which picture starts with this letter?', say: `Which picture starts with ${letterName(L)}?`, choices: [[L, w, e], ...opts].map(([l2, w2, e2]) => ({ html: emo(e2), ok: l2 === L, label: w2 })), onRight: `${w} starts with ${letterName(L)}!` }; }); } },
+  { id: 'le-case', unit: 'letters', title: 'Big and little', glyph: 'Aa', run: ctx => { const pool = ABC.map(a => a[0]), dk = deckOf(pool); runPick(ctx, 6, () => { const L = dk(); return { show: L, text: 'Find the little letter that matches.', say: `This is the big letter ${letterName(L)}. Find the little letter ${letterName(L)}.`, choices: [L, ...others(pool, 2, [L])].map(x => ({ html: x.toLowerCase(), ok: x === L, label: x.toLowerCase() })), onRight: `The little letter ${letterName(L)}.` }; }); } },
+  { id: 'le-sounds', unit: 'letters', title: 'First sounds', glyph: emo('🐻'), run: ctx => { const dk = deckOf(ABC.filter(a => a[0] !== 'X')); runPick(ctx, 6, () => { const [L, w, e] = dk(); const opts = others(ABC, 2, ABC.filter(a => a[0] === L || a[0] === 'X')); return { show: L + L.toLowerCase(), text: 'Which picture starts with this letter?', say: `Which picture starts with the letter ${letterName(L)}?`, choices: [[L, w, e], ...opts].map(([l2, w2, e2]) => ({ html: emo(e2), ok: l2 === L, label: w2 })), onRight: `${w} starts with the letter ${letterName(L)}.` }; }); } },
   /* Time */
   { id: 'ti-meet', unit: 'time', title: 'Meet the clock', glyph: emo('🕒'), run: ctx => runMeet(ctx, [3, 6, 9, 12, 1], h => `<div class="big">${clockSVG(h, 0)}</div><div class="cap">${h} o’clock</div>`, (h, card) => (h === 3 ? 'This is a clock. The short purple hand tells the hour. ' : '') + `The short hand points to ${NUMW[h]}. It's ${NUMW[h]} o'clock!`) },
   { id: 'ti-what', unit: 'time', title: 'What time is it?', glyph: emo('❓'), run: ctx => { const dk = deckOf([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]); runPick(ctx, 5, () => { const h = dk(); return { show: clockSVG(h, 0), text: 'What time is it?', say: 'What time is it? Look at the short hand.', choiceClass: 'small', choices: [h, ...others([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], 2, [h])].map(x => ({ html: `${x}:00`, ok: x === h, label: `${x} o'clock` })), onRight: `${NUMW[h]} o'clock!` }; }); } },
@@ -1305,7 +1390,7 @@ function openLesson(L) {
     dots(i, n) { const d = $('.dots', body); if (d.children.length !== n) d.innerHTML = '<i></i>'.repeat(n); [...d.children].forEach((c, j) => c.classList.toggle('on', j < i)); },
     done() {
       learn.done[L.id] = true; saveLearn(); markDone('learn');
-      bigCelebrate(); later(() => speak(`Great job, Lydia! You finished ${L.title}!`), 200);
+      bigCelebrate(); later(() => speak(`Great job${nm()}! You finished ${L.title}!`), 200);
       later(() => showMap(L.unit, L.id), 3400);
     }
   };
@@ -2280,7 +2365,7 @@ function picSVG(pic, mode, filled = new Set()) {
     const stroke = mode === 'line' ? '#3b2a55' : mode === 'full' ? 'none' : '#cbbfdc';
     s += `<path d="${r.d}"${tfAttr(r)} data-i="${i}" fill="${fill}" stroke="${stroke}" stroke-width="${mode === 'line' ? 1.6 : 1}" vector-effect="non-scaling-stroke"/>`;
   });
-  if (mode === 'cbn') { s += '<g>'; regs.forEach((r, i) => { if (!r.decor) s += `<text class="lbl" data-i="${i}" x="${f1(r.lx)}" y="${f1(r.ly)}" font-size="${f1(r.fs)}" fill="#8d80a6" text-anchor="middle"${filled.has(i) ? ' display="none"' : ''}>${r.num + 1}</text>`; }); s += '</g>'; }
+  if (mode === 'cbn') { s += '<g>'; regs.forEach((r, i) => { if (!r.decor) s += `<text class="lbl" data-i="${i}" x="${f1(r.lx)}" y="${f1(r.ly)}" font-size="${f1(r.fs)}" fill="#5f5080" stroke="#ffffff" stroke-width="${f1(Math.min(r.fs * .14, 5))}" text-anchor="middle"${filled.has(i) ? ' display="none"' : ''}>${r.num + 1}</text>`; }); s += '</g>'; }
   return s + '</svg>';
 }
 const lum = hex => { const n = parseInt(hex.slice(1), 16); return (.299 * (n >> 16) + .587 * (n >> 8 & 255) + .114 * (n & 255)) / 255; };
@@ -2322,7 +2407,7 @@ function openCBN(pic) {
   runArtCleanup(); clearLater();
   const { pal, total } = prepPic(pic), regs = pic.regions, st = picState(pic.id);
   st.t = total; const filled = new Set(st.f.filter(i => regs[i] && !regs[i].decor));
-  body.innerHTML = `<div class="cbn"><div class="cbn-top"><button class="lbtn" id="cBack" aria-label="Back to pictures">${ICON.back}</button><div class="cbn-pct" id="cPct"></div><button class="lbtn" id="cReplay" aria-label="Watch it again" hidden><svg viewBox="0 0 40 40"><path d="M14 9 L31 20 L14 31Z" fill="#fff7f3" stroke="#fff7f3" stroke-width="3" stroke-linejoin="round"/></svg></button><button class="lbtn" id="cHint" aria-label="Find one">${'<svg viewBox="0 0 40 40"><circle cx="17" cy="17" r="10" fill="none" stroke="#fff7f3" stroke-width="4"/><path d="M25 25 L34 34" stroke="#fff7f3" stroke-width="5" stroke-linecap="round"/></svg>'}</button></div>
+  body.innerHTML = `<div class="cbn"><div class="cbn-top"><button class="lbtn" id="cBack" aria-label="Back to pictures">${ICON.back}</button><div class="cbn-pct" id="cPct"></div><button class="lbtn" id="cReplay" aria-label="Watch it again" hidden><svg viewBox="0 0 40 40"><path d="M14 9 L31 20 L14 31Z" fill="#fff7f3" stroke="#fff7f3" stroke-width="3" stroke-linejoin="round"/></svg></button><button class="hintbtn" id="cHint" aria-label="Help me find one"><span class="emoji">💡</span>Help</button></div>
     <div class="cbn-view"><div class="cbn-inner">${picSVG(pic, 'cbn', filled)}</div>
       <div class="cbn-tools"><button class="lbtn" id="zIn" aria-label="Zoom in"><svg viewBox="0 0 40 40"><path d="M20 10 V30 M10 20 H30" stroke="#fff7f3" stroke-width="4.5" stroke-linecap="round"/></svg></button><button class="lbtn" id="zOut" aria-label="Zoom out"><svg viewBox="0 0 40 40"><path d="M10 20 H30" stroke="#fff7f3" stroke-width="4.5" stroke-linecap="round"/></svg></button><button class="lbtn" id="zFit" aria-label="Show whole picture"><svg viewBox="0 0 40 40"><path d="M8 15 V8 H15 M25 8 H32 V15 M32 25 V32 H25 M15 32 H8 V25" stroke="#fff7f3" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
     </div><div class="cbn-pal"></div></div>`;
@@ -2346,6 +2431,7 @@ function openCBN(pic) {
   function fillAt(i) {
     const r = regs[i]; if (!r || r.decor || filled.has(i) || r.num !== sel) return false;
     filled.add(i); paths[i].setAttribute('fill', r.c); if (labels[i]) labels[i].setAttribute('display', 'none');
+    lastAct = performance.now(); hintBtn.classList.remove('glow');
     remain[r.num]--; tone(SCALE[(r.num * 3 + filled.size) % 10], 0, .35, .06); updPct(); save();
     if (remain[r.num] === 0) { sws[r.num].classList.add('done'); sfx.chime(); const nx = remain.findIndex(v => v > 0); if (nx >= 0) later(() => select(nx), 400); else finish(); }
     return true;
@@ -2354,7 +2440,7 @@ function openCBN(pic) {
     st.done = true; st.f = [...filled]; store.set('lydia-cbn', cbnSave); markDone('art');
     fit(true); palEl.style.visibility = 'hidden'; $('.cbn-tools', body).style.visibility = 'hidden';
     paths.forEach(pth => pth.setAttribute('stroke', 'none'));
-    later(() => { bigCelebrate(view); speak(`You did it, Lydia! ${pic.name} is all done. It's beautiful!`); }, 450);
+    later(() => { bigCelebrate(view); speak(`You did it${nm()}! ${pic.name} is all done. It's beautiful!`); }, 450);
     later(playback, 4200);
   }
   /* Fast-forward replay: back to blank outlines, then refill in the order she colored it (~5 seconds). */
@@ -2385,20 +2471,50 @@ function openCBN(pic) {
   replayBtn.addEventListener('click', () => { sfx.click(); playback(); });
   /* zoom + pan */
   let B = 0, z = 1, tx = 0, ty = 0, vw = 0, vh = 0;
-  const apply = (anim) => { inner.style.transition = anim ? 'transform .45s cubic-bezier(.3,1,.4,1)' : 'none'; inner.style.transform = `translate3d(${tx}px,${ty}px,0) scale(${z})`; };
+  svg.setAttribute('preserveAspectRatio', 'none');
+  let az = 1, atx = 0, aty = 0, tw = 0, lastSc = 0;
+  /* Numbers too small to read at this zoom hide until she zooms in (like Happy Color). */
+  function updLabels(sc) {
+    if (lastSc && Math.abs(sc - lastSc) / sc < .03) return; lastSc = sc;
+    for (const i in labels) labels[i].style.visibility = regs[i].fs * sc < 7.5 ? 'hidden' : 'visible';
+  }
+  function setVB(zz, x, y) {
+    if (!B || !vw) return;
+    const sc = B * zz / 1000;
+    svg.setAttribute('viewBox', `${(-x / sc).toFixed(2)} ${(-y / sc).toFixed(2)} ${(vw / sc).toFixed(2)} ${(vh / sc).toFixed(2)}`);
+    az = zz; atx = x; aty = y; updLabels(sc);
+  }
+  const apply = anim => {
+    cancelAnimationFrame(tw);
+    if (!anim) return setVB(z, tx, ty);
+    const a = { z: az, x: atx, y: aty }, b = { z, x: tx, y: ty }, t0 = performance.now();
+    const stepA = now => { let k = Math.min(1, (now - t0) / 420); k = 1 - Math.pow(1 - k, 3); setVB(a.z + (b.z - a.z) * k, a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k); if (k < 1) tw = requestAnimationFrame(stepA); };
+    tw = requestAnimationFrame(stepA);
+  };
   const clampPan = () => { const W = B * z; tx = W <= vw ? (vw - W) / 2 : Math.min(60, Math.max(vw - W - 60, tx)); ty = W <= vh ? (vh - W) / 2 : Math.min(60, Math.max(vh - W - 60, ty)); };
-  function layout() { const r = view.getBoundingClientRect(); vw = r.width; vh = r.height; const nb = Math.min(vw, vh) - 16; if (B && nb !== B) { tx *= nb / B; ty *= nb / B; } B = nb; inner.style.width = inner.style.height = B + 'px'; clampPan(); apply(); }
+  function layout() { const r = view.getBoundingClientRect(); vw = r.width; vh = r.height; const nb = Math.min(vw, vh) - 16; if (B && nb !== B) { tx *= nb / B; ty *= nb / B; } B = nb; lastSc = 0; clampPan(); apply(); }
   function zoomAt(px, py, nz, anim) { nz = Math.max(1, Math.min(9, nz)); const ix = (px - tx) / z, iy = (py - ty) / z; z = nz; tx = px - ix * z; ty = py - iy * z; clampPan(); apply(anim); }
   function fit(anim) { z = 1; clampPan(); apply(anim); }
   $('#zIn', body).addEventListener('click', () => zoomAt(vw / 2, vh / 2, z * 1.7, true));
   $('#zOut', body).addEventListener('click', () => zoomAt(vw / 2, vh / 2, z / 1.7, true));
   $('#zFit', body).addEventListener('click', () => fit(true));
-  $('#cHint', body).addEventListener('click', () => {
+  let lastAct = performance.now();
+  function help() {
+    lastAct = performance.now(); hintBtn.classList.remove('glow');
     let bi = -1; regs.forEach((r, i) => { if (!r.decor && !filled.has(i) && r.num === sel && (bi < 0 || r.fs > regs[bi].fs)) bi = i; });
-    if (bi < 0) return; const r = regs[bi], nz = Math.max(z, Math.min(6, 60 / r.fs * 1.4 + 1));
-    z = nz; tx = vw / 2 - r.lx * B / 1000 * z; ty = vh / 2 - r.ly * B / 1000 * z; clampPan(); apply(true);
-    const l = labels[bi]; if (l) restart(l, 'pulse'); sfx.chime();
-  });
+    if (bi < 0) return;
+    const r = regs[bi], nz = Math.max(1, Math.min(8, 34 / (r.fs * B / 1000)));
+    stopGlide(); z = nz; tx = vw / 2 - r.lx * B / 1000 * z; ty = vh / 2 - r.ly * B / 1000 * z; clampPan(); apply(true);
+    const pth = paths[bi]; let n = 0;
+    const iv = setInterval(() => { if (filled.has(bi)) { clearInterval(iv); return; } pth.setAttribute('fill', n % 2 ? SELFILL : r.c); if (++n >= 7) { clearInterval(iv); pth.setAttribute('fill', SELFILL); } }, 280);
+    timers.push(iv);
+    const l = labels[bi]; if (l) restart(l, 'pulse');
+    sfx.chime(); speak(`Look here! Tap number ${r.num + 1}.`);
+  }
+  hintBtn.addEventListener('click', help);
+  /* If she hasn't filled anything for a while, the Help button glows. */
+  const idleIv = setInterval(() => { if (!st.done && performance.now() - lastAct > 20000) hintBtn.classList.add('glow'); }, 2000);
+  timers.push(idleIv);
   const regionAt = (x, y) => { const el = document.elementFromPoint(x, y); return el && el.tagName === 'path' && el.dataset.i != null && svg.contains(el) ? +el.dataset.i : -1; };
   /* Touch model (like Happy Color):
      zoomed in  → drag moves the picture (with a glide), tap fills, press-and-hold then drag fills many
@@ -2474,7 +2590,7 @@ function openCBN(pic) {
   $('#cBack', body).addEventListener('click', () => { sfx.click(); st.f = [...filled]; store.set('lydia-cbn', cbnSave); artHome(); });
   const onResize = () => layout();
   addEventListener('resize', onResize);
-  artCleanup = () => { cancelAnimationFrame(pbRaf); removeEventListener('resize', onResize); clearTimeout(saveT); clearTimeout(holdT); stopGlide(); st.f = [...filled]; store.set('lydia-cbn', cbnSave); };
+  artCleanup = () => { cancelAnimationFrame(pbRaf); cancelAnimationFrame(tw); removeEventListener('resize', onResize); clearTimeout(saveT); clearTimeout(holdT); stopGlide(); st.f = [...filled]; store.set('lydia-cbn', cbnSave); };
   layout(); paintSel(); updPct();
   if (st.done) { palEl.style.visibility = 'hidden'; $('.cbn-tools', body).style.visibility = 'hidden'; paths.forEach(pth => { const r = regs[+pth.dataset.i]; pth.setAttribute('fill', r.c); pth.setAttribute('stroke', 'none'); }); Object.values(labels).forEach(l => l.setAttribute('display', 'none')); pctEl.textContent = '100%'; replayBtn.hidden = false; hintBtn.hidden = true; }
 }
@@ -2590,6 +2706,12 @@ function openPaint(pg) {
 window.__dinoArt = { PICS, prepPic, picSVG, built };
 
 /* ---------------- boot ---------------- */
+$('#setBtn').addEventListener('click', () => { sfx.click(); openSettings(); });
+applyName();
+/* Offline support when hosted as its own site (GitHub Pages etc.); not inside Claude. */
+try {
+  if ('serviceWorker' in navigator && location.protocol === 'https:' && !/claude|anthropic/.test(location.hostname)) navigator.serviceWorker.register('./sw.js').catch(() => {});
+} catch (e) {}
 function start(data) { ((data && data.stars) || []).forEach(s => done.add(s)); refreshHub(); }
 try { window.claude?.hot?.snapshot?.(() => ({ stars: [...done] })); } catch (e) {}
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
