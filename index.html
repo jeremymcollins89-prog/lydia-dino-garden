@@ -2322,7 +2322,7 @@ function openCBN(pic) {
   runArtCleanup(); clearLater();
   const { pal, total } = prepPic(pic), regs = pic.regions, st = picState(pic.id);
   st.t = total; const filled = new Set(st.f.filter(i => regs[i] && !regs[i].decor));
-  body.innerHTML = `<div class="cbn"><div class="cbn-top"><button class="lbtn" id="cBack" aria-label="Back to pictures">${ICON.back}</button><div class="cbn-pct" id="cPct"></div><button class="lbtn" id="cHint" aria-label="Find one">${'<svg viewBox="0 0 40 40"><circle cx="17" cy="17" r="10" fill="none" stroke="#fff7f3" stroke-width="4"/><path d="M25 25 L34 34" stroke="#fff7f3" stroke-width="5" stroke-linecap="round"/></svg>'}</button></div>
+  body.innerHTML = `<div class="cbn"><div class="cbn-top"><button class="lbtn" id="cBack" aria-label="Back to pictures">${ICON.back}</button><div class="cbn-pct" id="cPct"></div><button class="lbtn" id="cReplay" aria-label="Watch it again" hidden><svg viewBox="0 0 40 40"><path d="M14 9 L31 20 L14 31Z" fill="#fff7f3" stroke="#fff7f3" stroke-width="3" stroke-linejoin="round"/></svg></button><button class="lbtn" id="cHint" aria-label="Find one">${'<svg viewBox="0 0 40 40"><circle cx="17" cy="17" r="10" fill="none" stroke="#fff7f3" stroke-width="4"/><path d="M25 25 L34 34" stroke="#fff7f3" stroke-width="5" stroke-linecap="round"/></svg>'}</button></div>
     <div class="cbn-view"><div class="cbn-inner">${picSVG(pic, 'cbn', filled)}</div>
       <div class="cbn-tools"><button class="lbtn" id="zIn" aria-label="Zoom in"><svg viewBox="0 0 40 40"><path d="M20 10 V30 M10 20 H30" stroke="#fff7f3" stroke-width="4.5" stroke-linecap="round"/></svg></button><button class="lbtn" id="zOut" aria-label="Zoom out"><svg viewBox="0 0 40 40"><path d="M10 20 H30" stroke="#fff7f3" stroke-width="4.5" stroke-linecap="round"/></svg></button><button class="lbtn" id="zFit" aria-label="Show whole picture"><svg viewBox="0 0 40 40"><path d="M8 15 V8 H15 M25 8 H32 V15 M32 25 V32 H25 M15 32 H8 V25" stroke="#fff7f3" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
     </div><div class="cbn-pal"></div></div>`;
@@ -2355,7 +2355,34 @@ function openCBN(pic) {
     fit(true); palEl.style.visibility = 'hidden'; $('.cbn-tools', body).style.visibility = 'hidden';
     paths.forEach(pth => pth.setAttribute('stroke', 'none'));
     later(() => { bigCelebrate(view); speak(`You did it, Lydia! ${pic.name} is all done. It's beautiful!`); }, 450);
+    later(playback, 4200);
   }
+  /* Fast-forward replay: back to blank outlines, then refill in the order she colored it (~5 seconds). */
+  let pbRaf = 0;
+  const replayBtn = $('#cReplay', body), hintBtn = $('#cHint', body);
+  function playback() {
+    cancelAnimationFrame(pbRaf); stopGlide(); fit(true); hush();
+    replayBtn.hidden = true; hintBtn.hidden = true;
+    const order = [...filled].filter(i => regs[i] && !regs[i].decor);
+    paths.forEach(pth => { const r = regs[+pth.dataset.i]; pth.setAttribute('stroke', '#d9cfe6'); if (!r.decor) pth.setAttribute('fill', '#ffffff'); });
+    Object.values(labels).forEach(l => l.setAttribute('display', 'none'));
+    const total = order.length, dur = Math.min(7000, Math.max(3800, total * 40));
+    let k = 0, t0 = null, lastTone = 0;
+    const stepP = now => {
+      if (t0 === null) t0 = now;
+      const target = Math.min(total, Math.ceil((now - t0) / dur * total));
+      while (k < target) { const i = order[k++]; paths[i].setAttribute('fill', regs[i].c); }
+      if (now - lastTone > 110 && k < total) { lastTone = now; tone(SCALE[(k * 3) % 10] * 2, 0, .22, .035); }
+      if (k < total) pbRaf = requestAnimationFrame(stepP);
+      else {
+        paths.forEach(pth => pth.setAttribute('stroke', 'none'));
+        const [x, y] = centerOf(view); burst(x, y, 45, 1); sfx.chime();
+        replayBtn.hidden = false;
+      }
+    };
+    pbRaf = requestAnimationFrame(stepP);
+  }
+  replayBtn.addEventListener('click', () => { sfx.click(); playback(); });
   /* zoom + pan */
   let B = 0, z = 1, tx = 0, ty = 0, vw = 0, vh = 0;
   const apply = (anim) => { inner.style.transition = anim ? 'transform .45s cubic-bezier(.3,1,.4,1)' : 'none'; inner.style.transform = `translate3d(${tx}px,${ty}px,0) scale(${z})`; };
@@ -2447,9 +2474,9 @@ function openCBN(pic) {
   $('#cBack', body).addEventListener('click', () => { sfx.click(); st.f = [...filled]; store.set('lydia-cbn', cbnSave); artHome(); });
   const onResize = () => layout();
   addEventListener('resize', onResize);
-  artCleanup = () => { removeEventListener('resize', onResize); clearTimeout(saveT); clearTimeout(holdT); stopGlide(); st.f = [...filled]; store.set('lydia-cbn', cbnSave); };
+  artCleanup = () => { cancelAnimationFrame(pbRaf); removeEventListener('resize', onResize); clearTimeout(saveT); clearTimeout(holdT); stopGlide(); st.f = [...filled]; store.set('lydia-cbn', cbnSave); };
   layout(); paintSel(); updPct();
-  if (st.done) { palEl.style.visibility = 'hidden'; $('.cbn-tools', body).style.visibility = 'hidden'; paths.forEach(pth => { const r = regs[+pth.dataset.i]; pth.setAttribute('fill', r.c); pth.setAttribute('stroke', 'none'); }); Object.values(labels).forEach(l => l.setAttribute('display', 'none')); pctEl.textContent = '100%'; }
+  if (st.done) { palEl.style.visibility = 'hidden'; $('.cbn-tools', body).style.visibility = 'hidden'; paths.forEach(pth => { const r = regs[+pth.dataset.i]; pth.setAttribute('fill', r.c); pth.setAttribute('stroke', 'none'); }); Object.values(labels).forEach(l => l.setAttribute('display', 'none')); pctEl.textContent = '100%'; replayBtn.hidden = false; hintBtn.hidden = true; }
 }
 
 /* ---- Paint studio ---- */
