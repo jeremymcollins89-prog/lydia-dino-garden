@@ -196,6 +196,37 @@ button:focus-visible{outline:4px solid var(--gold);outline-offset:4px}
   box-shadow:0 12px 26px rgba(20,6,38,.42);transition:transform .18s cubic-bezier(.3,1.6,.5,1),box-shadow .35s,filter .35s}
 .tube::before{content:"";position:absolute;left:18%;right:18%;top:5%;height:7%;border-radius:50%;background:rgba(255,255,255,.55)}
 .tube.lit{transform:translateY(-12px) scale(1.04);filter:brightness(1.15);box-shadow:0 12px 26px rgba(20,6,38,.42),0 0 46px 12px var(--c)}
+.music-room{position:relative;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2vh}
+#roomBody.song-mode .music{height:min(56vh,520px)}
+body:has(#songBtn) .room-star{left:calc(50% + 150px)}
+.songbtn{position:fixed;z-index:29;top:calc(env(safe-area-inset-top,0px) + 20px);left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;height:58px;padding:0 22px 0 16px;border-radius:999px;
+  background:var(--gold);color:var(--plum-deep);font-weight:700;font-size:clamp(17px,2.6vmin,22px);box-shadow:0 10px 22px rgba(20,6,38,.35)}
+.songbtn .emoji{font-size:26px}
+.songbtn:active{transform:translateX(-50%) scale(.94)}
+.song-bar{flex:none;display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px 18px;border-radius:28px;background:rgba(46,26,71,.55);border:2px solid var(--glass-edge);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);max-width:100%}
+.song-title{font-size:clamp(18px,2.8vmin,26px);font-weight:700}
+.song-notes{display:flex;flex-wrap:wrap;justify-content:center;gap:clamp(6px,1.4vmin,14px)}
+.sn{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:clamp(34px,5.2vmin,52px);transition:transform .2s}
+.sn i{width:clamp(28px,4.6vmin,46px);aspect-ratio:1;border-radius:50%;background:var(--c);opacity:.45;box-shadow:inset 0 -3px 0 rgba(46,26,71,.18);transition:opacity .2s,transform .2s}
+.sn span{font-size:clamp(14px,2.2vmin,20px);font-weight:600;opacity:.75}
+.sn.heard i,.sn.done i{opacity:1}
+.sn.done span{opacity:1;color:var(--gold)}
+.sn.now{transform:translateY(-6px)}
+.sn.now i{opacity:1;transform:scale(1.25);box-shadow:0 0 0 4px #fff7f3,0 0 18px var(--c)}
+.sn.now span{opacity:1}
+.tubes.listening{pointer-events:none}
+.tube.next{animation:nextPipe 1s ease-in-out infinite;box-shadow:0 12px 26px rgba(20,6,38,.42),0 0 0 6px #fff7f3,0 0 40px 10px var(--c)}
+@keyframes nextPipe{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+.tube.nudge{animation:wiggle .6s ease-in-out}
+.song-pick{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3vh;background:rgba(46,26,71,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-radius:32px}
+.pick-title{font-size:clamp(26px,4.6vmin,44px);font-weight:700;text-align:center}
+.pick-row{display:flex;gap:clamp(12px,2.6vmin,28px);flex-wrap:wrap;justify-content:center}
+.pick-song,.pick-act{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;width:clamp(150px,24vmin,230px);aspect-ratio:1;padding:14px;border-radius:32px;background:linear-gradient(170deg,#fffaf6,#ffe9f1);color:var(--plum-deep);font-weight:700;font-size:clamp(16px,2.4vmin,21px);text-align:center;line-height:1.15;box-shadow:0 14px 28px rgba(20,6,38,.38)}
+.pick-act{aspect-ratio:auto;height:clamp(120px,18vmin,170px)}
+.pick-song .emoji,.pick-act .emoji{font-size:clamp(46px,8vmin,76px)}
+.pick-song .badge{position:absolute;top:-12px;right:-12px;width:46px;height:46px}
+.pick-song:active,.pick-act:active{transform:scale(.95)}
+.pick-close{height:52px;padding:0 26px;border-radius:999px;background:var(--glass);border:2px solid var(--glass-edge);font-weight:700;font-size:18px}
 .note{position:absolute;z-index:5;font-size:clamp(34px,6vmin,60px);font-weight:700;pointer-events:none;animation:noteUp 1.6s ease-out forwards;text-shadow:0 4px 10px rgba(20,6,38,.4)}
 @keyframes noteUp{0%{opacity:0;transform:translate(-50%,0) scale(.6)}15%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--dx)),-34vh) scale(1.2) rotate(18deg)}}
 
@@ -1230,26 +1261,162 @@ const body = $('#roomBody');
 const build = {};
 
 /* Music: crystal pipes, tall = low, short = high */
+/* Pipes are tuned to a C major scale (do re mi fa sol la ti do), like a kid's xylophone. */
+const PIPE_NOTES = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
+const PIPE_COLS = ['#ff8fc2', '#ff9fae', '#ffb38a', '#ffd27a', '#7fd8c3', '#8fc4ff', '#a77be8', '#d48af0'];
+/* Three classic public-domain songs, split into short phrases. n = pipe (0–7), d = beats, w = words. */
+const SONGS = [
+  { id: 'twinkle', name: 'Twinkle Twinkle Little Star', icon: '⭐', bpm: 100, phrases: [
+    { n: [0, 0, 4, 4, 5, 5, 4], d: [1, 1, 1, 1, 1, 1, 2], w: ['Twin', 'kle', 'twin', 'kle', 'lit', 'tle', 'star'] },
+    { n: [3, 3, 2, 2, 1, 1, 0], d: [1, 1, 1, 1, 1, 1, 2], w: ['How', 'I', 'won', 'der', 'what', 'you', 'are'] },
+    { n: [4, 4, 3, 3, 2, 2, 1], d: [1, 1, 1, 1, 1, 1, 2], w: ['Up', 'a', 'bove', 'the', 'world', 'so', 'high'] },
+    { n: [4, 4, 3, 3, 2, 2, 1], d: [1, 1, 1, 1, 1, 1, 2], w: ['Like', 'a', 'dia', 'mond', 'in', 'the', 'sky'] },
+    { n: [0, 0, 4, 4, 5, 5, 4], d: [1, 1, 1, 1, 1, 1, 2], w: ['Twin', 'kle', 'twin', 'kle', 'lit', 'tle', 'star'] },
+    { n: [3, 3, 2, 2, 1, 1, 0], d: [1, 1, 1, 1, 1, 1, 2], w: ['How', 'I', 'won', 'der', 'what', 'you', 'are'] }] },
+  { id: 'mary', name: 'Mary Had a Little Lamb', icon: '🐑', bpm: 112, phrases: [
+    { n: [2, 1, 0, 1, 2, 2, 2], d: [1, 1, 1, 1, 1, 1, 2], w: ['Ma', 'ry', 'had', 'a', 'lit', 'tle', 'lamb'] },
+    { n: [1, 1, 1, 2, 4, 4], d: [1, 1, 2, 1, 1, 2], w: ['lit', 'tle', 'lamb', 'lit', 'tle', 'lamb'] },
+    { n: [2, 1, 0, 1, 2, 2, 2, 2], d: [1, 1, 1, 1, 1, 1, 1, 1], w: ['Ma', 'ry', 'had', 'a', 'lit', 'tle', 'lamb', 'its'] },
+    { n: [1, 1, 2, 1, 0], d: [1, 1, 1, 1, 4], w: ['fleece', 'was', 'white', 'as', 'snow'] },
+    { n: [2, 1, 0, 1, 2, 2, 2], d: [1, 1, 1, 1, 1, 1, 2], w: ['Ev', 'ry', 'where', 'that', 'Ma', 'ry', 'went'] },
+    { n: [1, 1, 1, 2, 4, 4], d: [1, 1, 2, 1, 1, 2], w: ['Ma', 'ry', 'went', 'Ma', 'ry', 'went'] },
+    { n: [2, 1, 0, 1, 2, 2, 2, 2], d: [1, 1, 1, 1, 1, 1, 1, 1], w: ['Ev', 'ry', 'where', 'that', 'Ma', 'ry', 'went', 'the'] },
+    { n: [1, 1, 2, 1, 0], d: [1, 1, 1, 1, 4], w: ['lamb', 'was', 'sure', 'to', 'go'] }] },
+  { id: 'row', name: 'Row, Row, Row Your Boat', icon: '🚣', bpm: 92, phrases: [
+    { n: [0, 0, 0, 1, 2], d: [1.5, 1.5, 1, .5, 1.5], w: ['Row', 'row', 'row', 'your', 'boat'] },
+    { n: [2, 1, 2, 3, 4], d: [1, .5, 1, .5, 3], w: ['gent', 'ly', 'down', 'the', 'stream'] },
+    { n: [7, 7, 7, 4, 4, 4, 2, 2, 2, 0, 0, 0], d: [.5, .5, .5, .5, .5, .5, .5, .5, .5, .5, .5, .5], w: ['Mer', 'ri', 'ly', 'mer', 'ri', 'ly', 'mer', 'ri', 'ly', 'mer', 'ri', 'ly'] },
+    { n: [4, 3, 2, 1, 0], d: [1, .5, 1, .5, 3], w: ['life', 'is', 'but', 'a', 'dream'] },
+    { n: [0, 0, 0, 1, 2], d: [1.5, 1.5, 1, .5, 1.5], w: ['Row', 'row', 'row', 'your', 'boat'] },
+    { n: [2, 1, 2, 3, 4], d: [1, .5, 1, .5, 3], w: ['gent', 'ly', 'down', 'the', 'stream'] },
+    { n: [7, 7, 7, 4, 4, 4, 2, 2, 2, 0, 0, 0], d: [.5, .5, .5, .5, .5, .5, .5, .5, .5, .5, .5, .5], w: ['Mer', 'ri', 'ly', 'mer', 'ri', 'ly', 'mer', 'ri', 'ly', 'mer', 'ri', 'ly'] },
+    { n: [4, 3, 2, 1, 0], d: [1, .5, 1, .5, 3], w: ['life', 'is', 'but', 'a', 'dream'] }] }
+];
+const songStars = store.get('dino-songs', {});
 build.music = () => {
   lullPaused = true;
-  body.innerHTML = `<div class="music"><svg class="dino breathe" viewBox="0 0 230 200"><use href="#dino"/></svg><div class="tubes"></div></div>`;
-  const wrap = $('.music', body), tubes = $('.tubes', body), dino = $('.dino', body);
-  const C = ['#ff8fc2', '#ff9fae', '#ffb38a', '#ffd27a', '#7fd8c3', '#8fc4ff', '#a77be8', '#d48af0'];
-  let taps = 0;
-  C.forEach((c, i) => {
+  body.innerHTML = `<div class="music-room">
+      <div class="song-bar" hidden><div class="song-title"></div><div class="song-notes"></div></div>
+      <div class="music"><svg class="dino breathe" viewBox="0 0 230 200"><use href="#dino"/></svg><div class="tubes"></div></div>
+      <div class="song-pick" hidden></div>
+    </div>
+    <button class="songbtn" id="songBtn"><span class="emoji">🎵</span><span id="songBtnTxt">Learn a song</span></button>`;
+  const wrap = $('.music', body), tubes = $('.tubes', body), dino = $('.dino', body), bar = $('.song-bar', body), notesEl = $('.song-notes', body), pick = $('.song-pick', body);
+  let taps = 0, song = null, runId = 0;
+  const T = [];
+  const wait = (fn, ms) => { const id = setTimeout(fn, ms); T.push(id); timers.push(id); return id; };
+  const stopAll = () => { T.forEach(clearTimeout); T.length = 0; runId++; };
+  /* ---- pipes ---- */
+  function sound(i, vol = .22, dur = 1.5) {
+    tone(PIPE_NOTES[i], 0, dur, vol);
+    const b = tubes.children[i];
+    restart(b, 'lit'); setTimeout(() => b.classList.remove('lit'), 300);
+    const w = wrap.getBoundingClientRect(), r = b.getBoundingClientRect(), n = document.createElement('span');
+    n.className = 'note'; n.textContent = Math.random() < .5 ? '♪' : '♫'; n.style.color = PIPE_COLS[i];
+    n.style.left = (r.left - w.left + r.width / 2) + 'px'; n.style.top = (r.top - w.top - 20) + 'px'; n.style.setProperty('--dx', (Math.random() * 60 - 30) + 'px');
+    wrap.appendChild(n); setTimeout(() => n.remove(), 1700);
+    dino.classList.remove('breathe'); restart(dino, 'hop');
+  }
+  PIPE_COLS.forEach((c, i) => {
     const b = document.createElement('button'); b.className = 'tube'; b.style.setProperty('--c', c); b.style.height = (100 - i * 6) + '%'; b.setAttribute('aria-label', 'Note ' + (i + 1));
     b.addEventListener('pointerdown', e => {
-      e.preventDefault(); tone(SCALE[i], 0, 1.5, .22);
-      restart(b, 'lit'); setTimeout(() => b.classList.remove('lit'), 280);
-      const w = wrap.getBoundingClientRect(), r = b.getBoundingClientRect(), n = document.createElement('span');
-      n.className = 'note'; n.textContent = Math.random() < .5 ? '♪' : '♫'; n.style.color = c;
-      n.style.left = (r.left - w.left + r.width / 2) + 'px'; n.style.top = (r.top - w.top - 20) + 'px'; n.style.setProperty('--dx', (Math.random() * 60 - 30) + 'px');
-      wrap.appendChild(n); setTimeout(() => n.remove(), 1700);
-      dino.classList.remove('breathe'); restart(dino, 'hop');
-      if (++taps === 10) { markDone('music'); burst(r.left + r.width / 2, r.top, 40, 1); }
+      e.preventDefault();
+      if (song && song.mode === 'listen') return;
+      sound(i);
+      if (song && song.mode === 'turn') return guidedTap(i);
+      if (!song && ++taps === 10) { markDone('music'); const r = b.getBoundingClientRect(); burst(r.left + r.width / 2, r.top, 40, 1); }
     });
     tubes.appendChild(b);
   });
+  /* ---- song bar: colored note dots (matching the pipes) with the words under them ---- */
+  function showPhrase(ph) {
+    notesEl.innerHTML = ph.n.map((k, j) => `<div class="sn"><i style="--c:${PIPE_COLS[k]}"></i><span>${ph.w[j]}</span></div>`).join('');
+  }
+  const markNote = (j, cls) => { const el = notesEl.children[j]; if (el) el.classList.add(cls); };
+  const clearNext = () => { $$('.tube', tubes).forEach(t => t.classList.remove('next')); $$('.sn', notesEl).forEach(x => x.classList.remove('now')); };
+  function setNext(j) {
+    clearNext(); const ph = song.phrases[song.p];
+    if (j < ph.n.length) { tubes.children[ph.n[j]].classList.add('next'); markNote(j, 'now'); }
+  }
+  /* ---- the dino plays a phrase ---- */
+  function demo(ph, then, beatMs) {
+    const my = runId; song.mode = 'listen'; tubes.classList.add('listening'); showPhrase(ph);
+    let t = 300;
+    ph.n.forEach((k, j) => { wait(() => { if (my !== runId) return; sound(k, .2, Math.min(1.6, ph.d[j] * beatMs / 1000 + .5)); $$('.sn', notesEl).forEach(x => x.classList.remove('now')); markNote(j, 'now'); markNote(j, 'heard'); }, t); t += ph.d[j] * beatMs; });
+    wait(() => { if (my !== runId) return; tubes.classList.remove('listening'); then(); }, t + 300);
+  }
+  /* ---- her turn: the next pipe glows; wrong pipes just play ---- */
+  function yourTurn() {
+    song.mode = 'turn'; song.j = 0; showPhrase(song.phrases[song.p]); setNext(0);
+  }
+  function guidedTap(i) {
+    const ph = song.phrases[song.p], want = ph.n[song.j];
+    if (i !== want) { const t = tubes.children[want]; restart(t, 'nudge'); return; }
+    markNote(song.j, 'done'); song.j++;
+    if (song.j < ph.n.length) return setNext(song.j);
+    clearNext(); song.mode = 'wait';
+    const r = notesEl.getBoundingClientRect(); burst(r.left + r.width / 2, r.top + r.height / 2, 24, .7);
+    song.p++;
+    if (song.p < song.phrases.length) {
+      const nice = ['Yay!', 'Beautiful!', 'You did it!', 'So pretty!', 'Great playing!'][rand(5)];
+      if (song.solo) wait(yourTurn, 700); else speakThen(`${nice} Listen to the next part.`, () => demo(song.phrases[song.p], () => speakThen('Your turn!', yourTurn), song.beat), true);
+    } else finishSong();
+  }
+  /* ---- whole song together, words lighting up ---- */
+  function playAll(then) {
+    const my = runId; song.mode = 'listen'; tubes.classList.add('listening');
+    let t = 400;
+    song.phrases.forEach((ph, pi) => {
+      wait(() => { if (my === runId) showPhrase(ph); }, t - 120);
+      ph.n.forEach((k, j) => { wait(() => { if (my !== runId) return; sound(k, .2, Math.min(1.6, ph.d[j] * song.beat / 1000 + .5)); $$('.sn', notesEl).forEach(x => x.classList.remove('now')); markNote(j, 'now'); markNote(j, 'heard'); }, t); t += ph.d[j] * song.beat; });
+      t += song.beat * .5;
+    });
+    wait(() => { if (my !== runId) return; tubes.classList.remove('listening'); then(); }, t + 300);
+  }
+  function finishSong() {
+    song.mode = 'wait';
+    if (song.solo) return celebrate();
+    speakThen(`You learned ${song.name}! Let’s play it all together!`, () => playAll(celebrate), true);
+  }
+  function celebrate() {
+    songStars[song.id] = true; store.set('dino-songs', songStars); markDone('music');
+    bigCelebrate(wrap);
+    speak(`Wonderful${nm()}! You played ${song.name}!`, true);
+    pick.innerHTML = `<div class="pick-title">${song.icon} ${song.name}</div>
+      <div class="pick-row"><button class="pick-act" data-a="solo"><span class="emoji">🎹</span>Play it myself</button><button class="pick-act" data-a="listen"><span class="emoji">👂</span>Hear it again</button><button class="pick-act" data-a="other"><span class="emoji">🎵</span>Pick another song</button></div>`;
+    pick.hidden = false;
+    $$('.pick-act', pick).forEach(b => b.addEventListener('click', () => {
+      sfx.click(); pick.hidden = true; const s0 = SONGS.find(x => x.id === song.id);
+      if (b.dataset.a === 'solo') startSong(s0, true);
+      else if (b.dataset.a === 'listen') { stopAll(); song.mode = 'listen'; playAll(() => { song.mode = 'wait'; pick.hidden = false; }); }
+      else showPicker();
+    }));
+  }
+  /* ---- start a song ---- */
+  function startSong(sg, solo = false) {
+    stopAll(); hush(); pick.hidden = true; bar.hidden = false; body.classList.add('song-mode');
+    song = { ...sg, p: 0, j: 0, mode: 'wait', solo, beat: 60000 / sg.bpm };
+    $('.song-title', bar).textContent = `${sg.icon} ${sg.name}`;
+    $('#songBtnTxt').textContent = 'Free play';
+    showPhrase(song.phrases[0]);
+    if (solo) speakThen(`Play ${sg.name} by yourself! Follow the glowing pipe.`, yourTurn);
+    else speakThen(`Let’s learn ${sg.name}! Listen to me first.`, () => demo(song.phrases[0], () => speakThen('Your turn! Tap the glowing pipe.', yourTurn), song.beat));
+  }
+  function showPicker() {
+    stopAll(); clearNext(); song = null; bar.hidden = true; tubes.classList.remove('listening'); body.classList.remove('song-mode');
+    $('#songBtnTxt').textContent = 'Learn a song';
+    pick.innerHTML = `<div class="pick-title">Pick a song to learn</div><div class="pick-row">${SONGS.map(sg => `<button class="pick-song" data-id="${sg.id}"><span class="emoji">${sg.icon}</span><span>${sg.name}</span>${songStars[sg.id] ? '<svg class="badge"><use href="#star"/></svg>' : ''}</button>`).join('')}</div><button class="pick-close">Just play</button>`;
+    pick.hidden = false;
+    $$('.pick-song', pick).forEach(b => b.addEventListener('click', () => { sfx.chime(); startSong(SONGS.find(x => x.id === b.dataset.id)); }));
+    $('.pick-close', pick).addEventListener('click', () => { sfx.click(); pick.hidden = true; hush(); });
+    speak('Which song should we learn?', true);
+  }
+  $('#songBtn').addEventListener('click', () => {
+    sfx.click();
+    if (song || !pick.hidden) { stopAll(); clearNext(); song = null; bar.hidden = true; pick.hidden = true; tubes.classList.remove('listening'); body.classList.remove('song-mode'); $('#songBtnTxt').textContent = 'Learn a song'; hush(); speak('Free play! Tap any pipe.', true); }
+    else showPicker();
+  });
+  cleanup = () => { stopAll(); body.classList.remove('song-mode'); };
 };
 
 /* Shapes: drag each shape into its matching hole */
@@ -1338,6 +1505,7 @@ function sayPump() {
     if (done) return; done = true;
     if (sayCur !== item) return;
     clearTimeout(sayWatch); sayCur = null; sayKeep = [];
+    if (item.onDone) { const cb = item.onDone; item.onDone = null; setTimeout(cb, 0); }
     if (!sayQ.length) buddyQuiet();
     setTimeout(sayPump, 150);
   };
@@ -1353,13 +1521,13 @@ function sayPump() {
   const est = item.parts.reduce((a, pt) => a + 500 + pt.t.length * 90 / (baseRate() * (pt.rate || 1)), 0);
   sayWatch = setTimeout(finish, est * 1.8 + 3000);
 }
-function sayEnqueue(parts, interrupt) {
+function sayEnqueue(parts, interrupt, onDone) {
   const st = { started: false };
   try {
     const s = window.speechSynthesis; if (!s || !parts.length) return st;
     const text = parts.map(pt => pt.t).join(' ').replace(/\.\s+(?=[a-z])/g, ' ');
     sayQ.length = 0;
-    sayQ.push({ parts, text, st });
+    sayQ.push({ parts, text, st, onDone });
     lastSaid = () => sayEnqueue(parts, true);
     if (interrupt && (sayCur || s.speaking || s.pending)) {
       const cur = sayCur; sayCur = null; clearTimeout(sayWatch); if (cur) cur.finish && (cur.finish = null);
@@ -1371,6 +1539,13 @@ function sayEnqueue(parts, interrupt) {
 }
 /* speak(text): waits its turn.  speak(text, true): the child just tapped something, so say it now. */
 function speak(text, interrupt = false) { if (text) sayEnqueue([{ t: text }], interrupt); }
+/* Say something, then run cb when the voice finishes (or after a fallback time if the device stays silent). */
+function speakThen(text, cb, interrupt = true) {
+  let fired = false; const go = () => { if (fired) return; fired = true; cb(); };
+  const st = sayEnqueue([{ t: text }], interrupt, go);
+  setTimeout(() => { if (!st.started) go(); }, 2500);
+  setTimeout(go, 2500 + text.length * 120 / baseRate());
+}
 /* Speak a sequence and run each part's highlight exactly when the voice starts it. */
 function speakSeq(parts, interrupt = true) { return sayEnqueue(parts, interrupt); }
 /* ---- the purple dino buddy: talks while the voice speaks, shows a speech bubble, repeats when tapped ---- */
