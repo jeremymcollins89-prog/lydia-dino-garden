@@ -71,6 +71,17 @@ button:focus-visible{outline:4px solid var(--gold);outline-offset:4px}
 .chips2{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
 .chips2 button{height:42px;padding:0 16px;border-radius:999px;background:rgba(255,247,243,.12);border:2px solid rgba(255,247,243,.25);font-weight:600;font-size:15px}
 .chips2 button.on{background:var(--cream);color:var(--plum-deep);border-color:var(--cream)}
+#potty{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at 50% 45%,rgba(255,208,189,.45),rgba(30,12,50,.82) 70%);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.potty-card{display:flex;flex-direction:column;align-items:center;gap:2.4vh;animation:settle .7s cubic-bezier(.3,1.7,.5,1)}
+.potty-dino{width:min(44vmin,380px)}
+.potty-q{font-size:clamp(32px,6vmin,58px);font-weight:700;text-align:center;text-wrap:balance;text-shadow:0 4px 0 rgba(46,26,71,.4)}
+.potty-btns{display:flex;gap:clamp(14px,3vmin,32px);flex-wrap:wrap;justify-content:center}
+.potty-btns button{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:clamp(150px,26vmin,240px);padding:clamp(14px,2.4vmin,22px) 24px;border-radius:32px;font-weight:700;font-size:clamp(22px,3.6vmin,34px);box-shadow:0 14px 28px rgba(20,6,38,.4)}
+.potty-btns .emoji{font-size:clamp(48px,9vmin,84px)}
+.potty-yes{background:radial-gradient(circle at 35% 25%,rgba(255,255,255,.55),transparent 45%),#7fd8c3;color:var(--plum-deep)}
+.potty-later{background:radial-gradient(circle at 35% 25%,rgba(255,255,255,.45),transparent 45%),#c9a6ff;color:var(--plum-deep)}
+.potty-btns button:active{transform:scale(.94)}
+.potty-yes.ready{animation:ring 1.4s ease-in-out infinite}
 #setBtn{right:calc(max(18px,calc(env(safe-area-inset-right,0px) + 18px)) + 80px)}
 #setBtn.needs::after{content:"";position:absolute;top:4px;right:4px;width:14px;height:14px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 3px rgba(46,26,71,.6);animation:ring 1.6s ease-in-out infinite}
 .name .sp{width:.35em}
@@ -244,12 +255,22 @@ button:focus-visible{outline:4px solid var(--gold);outline-offset:4px}
 .tens{display:flex;flex-direction:column;gap:clamp(6px,1.2vmin,12px);align-items:flex-start;margin:0 auto}
 .tenrow{display:flex;gap:clamp(4px,.9vmin,9px)}
 .dot{width:clamp(18px,3vmin,30px);aspect-ratio:1;border-radius:50%;background:#c9a6ff;box-shadow:inset 0 -3px 0 rgba(46,26,71,.2);transition:transform .25s cubic-bezier(.3,1.6,.5,1),background .25s,box-shadow .25s;flex:none}
-.tenrow:nth-child(2) .dot{background:#ffb070}.tenrow:nth-child(3) .dot{background:#7fd8c3}
+.tenrow:nth-child(3n+2) .dot{background:#ffb070}.tenrow:nth-child(3n) .dot{background:#7fd8c3}
+.tens.dense{gap:clamp(3px,.7vmin,7px)}.tens.dense .tenrow{gap:clamp(3px,.6vmin,6px)}
+.meet .tens.dense .dot{width:clamp(11px,1.9vmin,19px)}
+.stage .tens.dense .dot{width:clamp(20px,3.4vmin,34px)}
+.meet .big.mid{font-size:clamp(60px,11vmin,120px)}
 .dot.lit,.dot.on{background:var(--gold)!important;transform:scale(1.18);box-shadow:0 0 10px rgba(255,210,122,.9)}
 .stage .tens .dot{width:clamp(30px,5.4vmin,52px)}
 .meet .tens .dot{width:clamp(16px,2.8vmin,28px)}
 .count-badge{font-size:clamp(40px,7vmin,70px);font-weight:700;color:var(--gold);line-height:1;text-shadow:0 4px 0 rgba(46,26,71,.4);font-variant-numeric:tabular-nums}
 .stones.many .stone{width:clamp(78px,11vmin,118px)}
+.stones.lots .stone{width:clamp(64px,9vmin,98px)}
+.stones.lots .stone .disc{font-size:clamp(20px,3.6vmin,34px)}
+.stones.lots .stone .label{font-size:clamp(12px,1.75vmin,16px)}
+.stones.many.lots{max-width:min(100%,calc(7 * clamp(64px,9vmin,98px) + 6 * clamp(10px,2.2vmin,26px) + 4px))}
+.stones.lots .stone:nth-child(even){margin-top:3.5vh}
+.stones.lots .stone .here{width:48%}
 .stones.many .stone:nth-child(even){margin-top:5vh}
 .stones.many{gap:clamp(10px,2vmin,24px) clamp(10px,2.2vmin,26px);max-width:min(100%,calc(6 * clamp(78px,11vmin,118px) + 5 * clamp(10px,2.2vmin,26px) + 4px))}
 .count-items{display:flex;flex-wrap:wrap;gap:clamp(6px,1.6vmin,18px);justify-content:center;max-width:min(92%,820px)}
@@ -489,6 +510,16 @@ button:focus-visible{outline:4px solid var(--gold);outline-offset:4px}
 
 <button id="buddy" class="talker-wrap" aria-label="Hear it again" hidden><svg class="dino talker" viewBox="0 0 230 200"><use href="#dino"/></svg></button>
 <div id="bubble" aria-live="polite"></div>
+<div id="potty" hidden>
+  <div class="potty-card">
+    <svg class="dino talker potty-dino" viewBox="0 0 230 200"><use href="#dino"/></svg>
+    <div class="potty-q">Do you need to go potty?</div>
+    <div class="potty-btns">
+      <button class="potty-yes" id="pottyYes"><span class="emoji">🚽</span>Yes!</button>
+      <button class="potty-later" id="pottyLater"><span class="emoji">⏰</span>Ask me later</button>
+    </div>
+  </div>
+</div>
 <div id="travel" hidden><div class="runner"><svg class="dino" viewBox="0 0 230 200"><use href="#dino"/></svg></div></div>
 
 <div id="finale" hidden>
@@ -905,6 +936,41 @@ function go(room) {
     }
   });
 }
+/* ---- Potty timer: after an hour of continuous play the dino asks; either answer starts the next hour.
+   Only counts while the game is on screen; a break of 15+ minutes starts the count fresh. ---- */
+const potty = Object.assign({ mins: 60, played: 0, lastSeen: Date.now() }, store.get('dino-potty', {}));
+if (Date.now() - potty.lastSeen > 15 * 60000) potty.played = 0;
+let pottyOpen = false, pottyTick = Date.now();
+const savePotty = () => { potty.lastSeen = Date.now(); store.set('dino-potty', potty); };
+setInterval(() => {
+  const now = Date.now(), dt = now - pottyTick; pottyTick = now;
+  if (document.hidden || pottyOpen || !potty.mins) return;
+  if (dt > 0 && dt < 60000) potty.played += dt;
+  savePotty();
+  if (potty.played >= potty.mins * 60000) askPotty();
+}, 5000);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { savePotty(); return; }
+  if (Date.now() - potty.lastSeen > 15 * 60000) { potty.played = 0; savePotty(); }
+  pottyTick = Date.now();
+});
+function askPotty() {
+  if (pottyOpen) return; pottyOpen = true;
+  const ov = $('#potty'); ov.hidden = false; lullPaused = true;
+  ['#pottyYes', '#pottyLater'].forEach(id => $(id).disabled = true);
+  sfx.chime(); setTimeout(() => sfx.giggle(), 450);
+  setTimeout(() => speak(`Hey${nm(' ')}! Do you need to go potty?`), 700);
+  /* Buttons wake up after a moment so a stray tap doesn't dismiss it. */
+  setTimeout(() => { ['#pottyYes', '#pottyLater'].forEach(id => $(id).disabled = false); $('#pottyYes').classList.add('ready'); }, 1800);
+}
+function closePotty(msg) {
+  potty.played = 0; savePotty();
+  $('#pottyYes').classList.remove('ready');
+  speak(msg);
+  setTimeout(() => { $('#potty').hidden = true; pottyOpen = false; lullPaused = current !== null && ['music', 'learn', 'build'].includes(current); }, 2600);
+}
+$('#pottyYes').addEventListener('click', () => { const [x, y] = centerOf($('#pottyYes')); burst(x, y, 40, 1); sfx.fanfare(); closePotty(`Great job listening to your body${nm()}! Go potty, and I'll wait right here.`); });
+$('#pottyLater').addEventListener('click', () => { sfx.click(); closePotty('Okay! I\u2019ll ask you again later.'); });
 $('#buddy').addEventListener('click', () => { if (lastSaid) lastSaid(); else speak('Hi! I\u2019m here to help.'); });
 addEventListener('resize', () => { if ($('#bubble').classList.contains('saying')) placeBubble(); });
 function refreshHub() { $$('.portal').forEach(p => p.classList.toggle('done', done.has(p.dataset.room))); }
@@ -1152,6 +1218,8 @@ function openSettings() {
       <div class="chips2" id="sRate"><button data-v="slower">Slower</button><button data-v="slow">Slow</button><button data-v="normal">Normal</button></div>
       <div class="set-label">Voice style</div>
       <div class="chips2" id="sStyle"><button data-v="kid">Kid</button><button data-v="natural">Natural</button></div>
+      <div class="set-label">Potty reminder</div>
+      <div class="chips2" id="sPotty"><button data-v="30">30 min</button><button data-v="45">45 min</button><button data-v="60">1 hour</button><button data-v="0">Off</button></div>
       <div class="set-row"><button class="vp-done soft" id="sVoice">Voice…</button><button class="vp-done" id="sSave">Save</button></div>
       <div class="set-sep"></div>
       <button class="set-danger" id="sReset">Reset all progress</button>
@@ -1162,6 +1230,9 @@ function openSettings() {
     $$('#sRate button', ov).forEach(b => b.addEventListener('click', () => { voiceOpts.rate = b.dataset.v; store.set('dino-voice-opts', voiceOpts); syncChips(); speak('This is how fast I talk.'); }));
     $$('#sStyle button', ov).forEach(b => b.addEventListener('click', () => { voiceOpts.style = b.dataset.v; store.set('dino-voice-opts', voiceOpts); syncChips(); speak('Hi! This is my voice.'); }));
     syncChips();
+    const syncPotty = () => $$('#sPotty button', ov).forEach(b => b.classList.toggle('on', +b.dataset.v === potty.mins));
+    $$('#sPotty button', ov).forEach(b => b.addEventListener('click', () => { potty.mins = +b.dataset.v; potty.played = 0; savePotty(); syncPotty(); sfx.click(); }));
+    syncPotty();
     const save = () => {
       kidName = ki.value.replace(/[^\p{L}\p{M}' -]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 14);
       store.set('dino-kid-name', kidName); applyName(); sfx.chime();
@@ -1194,7 +1265,7 @@ const PRAISE = ['Great job!', 'You did it!', 'Yes! That’s right!', 'Wonderful!
 const praise = () => { const list = kidName ? [...PRAISE, `Super, ${kidName}!`, `Great job, ${kidName}!`] : PRAISE; return list[rand(list.length)]; };
 const NUMW = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
 const ONESW = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
-const numWord = n => n < 20 ? ONESW[n] : ['', '', 'twenty', 'thirty', 'forty'][Math.floor(n / 10)] + (n % 10 ? '-' + ONESW[n % 10] : '');
+const numWord = n => n >= 100 ? 'one hundred' : n < 20 ? ONESW[n] : ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'][Math.floor(n / 10)] + (n % 10 ? '-' + ONESW[n % 10] : '');
 /* Two "close" wrong answers (n±1, n±10) teach that the tens digit matters. */
 function numChoices(n, min, max) {
   const near = shuffle([n - 1, n + 1, n - 10, n + 10, n + 2, n - 2].filter(v => v >= min && v <= max && v !== n));
@@ -1203,7 +1274,7 @@ function numChoices(n, min, max) {
   return [n, ...picks];
 }
 /* Ten-frame dots: full rows of ten, then the extras. */
-const tensHTML = (n, btn = false) => { let s = '<div class="tens">'; for (let r = 0; r < Math.ceil(n / 10); r++) { s += '<div class="tenrow">'; for (let k = 0; k < Math.min(10, n - r * 10); k++) s += btn ? '<button class="dot" aria-label="Count"></button>' : '<span class="dot"></span>'; s += '</div>'; } return s + '</div>'; };
+const tensHTML = (n, btn = false) => { let s = `<div class="tens${n > 50 ? ' dense' : ''}">`; for (let r = 0; r < Math.ceil(n / 10); r++) { s += '<div class="tenrow">'; for (let k = 0; k < Math.min(10, n - r * 10); k++) s += btn ? '<button class="dot" aria-label="Count"></button>' : '<span class="dot"></span>'; s += '</div>'; } return s + '</div>'; };
 const COUNTERS = ['🦕', '⭐', '🌸', '🍓', '🥚', '🦋', '🍎', '🐞'];
 const ABC = [['A', 'apple', '🍎'], ['B', 'bear', '🐻'], ['C', 'cat', '🐱'], ['D', 'dog', '🐶'], ['E', 'egg', '🥚'], ['F', 'fish', '🐟'], ['G', 'grapes', '🍇'], ['H', 'hat', '🎩'],
   ['I', 'ice cream', '🍦'], ['J', 'juice', '🧃'], ['K', 'kite', '🪁'], ['L', 'lion', '🦁'], ['M', 'moon', '🌙'], ['N', 'nose', '👃'], ['O', 'octopus', '🐙'], ['P', 'pig', '🐷'],
@@ -1291,12 +1362,18 @@ function runCount(ctx, rounds, min, max) {
     ctx.stage.innerHTML = big
       ? `<div class="count-badge">0</div>${tensHTML(n, true)}<div class="choices"></div>`
       : `<div class="count-items">${Array.from({ length: n }, () => `<button class="citem emoji" aria-label="Count">${e}</button>`).join('')}</div><div class="choices"></div>`;
-    ctx.prompt(big ? 'How many dots? Tap each one to count.' : 'How many? Tap each one to count.', big ? 'How many dots are there? Tap each one to count. Each row has ten.' : 'How many are there? Tap each one to count.');
+    ctx.prompt(max > 30 ? 'How many? Tap each row to count by tens.' : big ? 'How many dots? Tap each one to count.' : 'How many? Tap each one to count.',
+      max > 30 ? 'How many dots are there? Tap each row to count by tens. Then tap the extra dots.' : big ? 'How many dots are there? Tap each one to count. Each row has ten.' : 'How many are there? Tap each one to count.');
     let c = 0; const badge = $('.count-badge', ctx.stage);
+    const byTens = max > 30;
     $$(big ? '.dot' : '.citem', ctx.stage).forEach(it => it.addEventListener('click', () => {
       if (it.classList.contains('on')) return;
-      c++; it.classList.add('on'); if (!big) it.insertAdjacentHTML('beforeend', `<b>${c}</b>`); if (badge) { badge.textContent = c; restart(badge, 'settle'); }
-      tone(SCALE[(c - 1) % 10], 0, .5, .09); speak(numWord(c));
+      const row = it.parentElement, rowDots = big ? $$('.dot', row) : [it];
+      /* Count by tens: a full row of ten lights and counts all at once. */
+      const group = byTens && rowDots.length === 10 ? rowDots.filter(d => !d.classList.contains('on')) : [it];
+      group.forEach(d => d.classList.add('on')); c += group.length;
+      if (!big) it.insertAdjacentHTML('beforeend', `<b>${c}</b>`); if (badge) { badge.textContent = c; restart(badge, 'settle'); }
+      tone(SCALE[(Math.ceil(c / (group.length > 1 ? 10 : 1)) - 1) % 10], 0, .5, .09); speak(numWord(c));
     }));
     const opts = big ? numChoices(n, min, max) : [n, ...others([...Array(max).keys()].map(x => x + 1), 2, [n])];
     const box = $('.choices', ctx.stage); let locked = false;
@@ -1366,7 +1443,8 @@ function countAlong(card, n) {
     const rows = $$('.tenrow', card), dots = $$('.dot', card), clear = () => dots.forEach(q => q.classList.remove('lit'));
     const full = Math.floor(n / 10), extra = rows[full] ? $$('.dot', rows[full]) : [];
     let lit = [];
-    const parts = [{ t: `${numWord(n)}.`, rate: .9, on: clear }, { t: `${full === 1 ? 'One ten' : numWord(full) + ' tens'}${n % 10 ? ' and ' + numWord(n % 10) : ''}. Let's count.`, rate: .9 }];
+    const cap = w => w[0].toUpperCase() + w.slice(1);
+    const parts = [{ t: `${cap(numWord(n))}.`, rate: .9, on: clear }, { t: `${full === 1 ? 'One ten' : cap(numWord(full)) + ' tens'}${n % 10 ? ' and ' + numWord(n % 10) : ''}. Let's count.`, rate: .9 }];
     for (let k = 0; k < full; k++) parts.push({ t: numWord((k + 1) * 10), rate: .85, on: () => { lit = lit.concat($$('.dot', rows[k])); lit.forEach(q => q.classList.add('lit')); } });
     extra.forEach((d, j) => parts.push({ t: numWord(full * 10 + j + 1), rate: .8, on: () => d.classList.add('lit') }));
     parts.push({ t: `${numWord(n)}!`, rate: .9, on: () => dots.forEach(q => q.classList.add('lit')) });
@@ -1401,7 +1479,7 @@ function spellAlong(card, w) {
 /* ---- the path ---- */
 const UNITS = [
   { id: 'shapes', name: 'Shapes', sub: 'See them, name them, match them', color: '#ff8fc2', icon: '<svg viewBox="0 0 100 100"><g fill="#fff"><path d="M28 10 L50 48 L6 48Z"/><circle cx="72" cy="30" r="19"/><rect x="32" y="58" width="36" height="34" rx="7"/></g></svg>' },
-  { id: 'numbers', name: 'Numbers', sub: 'Count from 1 to 30', color: '#ffb070', icon: '123' },
+  { id: 'numbers', name: 'Numbers', sub: 'Count from 1 to 100', color: '#ffb070', icon: '123' },
   { id: 'letters', name: 'Letters', sub: 'A to Z, big and little', color: '#5fc9b1', icon: 'ABC' },
   { id: 'time', name: 'Time', sub: 'Read the clock', color: '#6fb2ff', icon: '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="#fff" stroke-width="9"/><path d="M50 26 V50 L66 60" stroke="#fff" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
   { id: 'reading', name: 'Reading', sub: 'First words', color: '#a77be8', icon: '<svg viewBox="0 0 100 100"><path d="M10 24 C26 18 40 20 50 28 C60 20 74 18 90 24 V80 C74 74 60 76 50 84 C40 76 26 74 10 80Z" fill="#fff"/><path d="M50 28 V84" stroke="#a77be8" stroke-width="4"/></svg>' }
@@ -1426,7 +1504,14 @@ const LESSONS = [
   { id: 'nu-find20', unit: 'numbers', title: 'Numbers 11 to 20', glyph: emo('🔍'), run: ctx => { const all = Array.from({ length: 10 }, (_, i) => i + 11), dk = deckOf(all); runPick(ctx, 6, () => { const n = dk(); return { text: 'Listen, then find it!', say: `Find the number ${numWord(n)}.`, hint: `Try again! Find ${numWord(n)}.`, choiceClass: 'small', choices: numChoices(n, 1, 20).map(x => ({ html: String(x), ok: x === n, label: String(x) })) }; }); } },
   { id: 'nu-meet30', unit: 'numbers', title: 'Meet 21 to 30', glyph: '21–30', run: ctx => runMeet(ctx, [21, 22, 23, 24, 25, 26, 27, 28, 29, 30], n => `<div class="big">${n}</div>${tensHTML(n)}`, (n, card) => countAlong(card, n)) },
   { id: 'nu-count30', unit: 'numbers', title: 'Count to 30', glyph: emo('🔢'), run: ctx => runCount(ctx, 4, 18, 30) },
-  { id: 'nu-find30', unit: 'numbers', title: 'Numbers 1 to 30', glyph: emo('🏆'), run: ctx => { const all = Array.from({ length: 30 }, (_, i) => i + 1), dk = deckOf(all); runPick(ctx, 8, () => { const n = dk(); return { text: 'Listen, then find it!', say: `Find the number ${numWord(n)}.`, hint: `Try again! Find ${numWord(n)}.`, choiceClass: 'small', choices: numChoices(n, 1, 30).map(x => ({ html: String(x), ok: x === n, label: String(x) })) }; }); } },
+  { id: 'nu-find30', unit: 'numbers', title: 'Numbers 1 to 30', glyph: emo('⭐'), run: ctx => { const all = Array.from({ length: 30 }, (_, i) => i + 1), dk = deckOf(all); runPick(ctx, 8, () => { const n = dk(); return { text: 'Listen, then find it!', say: `Find the number ${numWord(n)}.`, hint: `Try again! Find ${numWord(n)}.`, choiceClass: 'small', choices: numChoices(n, 1, 30).map(x => ({ html: String(x), ok: x === n, label: String(x) })) }; }); } },
+  { id: 'nu-tens', unit: 'numbers', title: 'Count by tens', glyph: '10s', run: ctx => runMeet(ctx, [10, 20, 30, 40, 50, 60, 70, 80, 90, 100], n => `<div class="big${n > 50 ? ' mid' : ''}">${n}</div>${tensHTML(n)}`, (n, card) => countAlong(card, n)) },
+  { id: 'nu-meet50', unit: 'numbers', title: 'Meet 31 to 50', glyph: '31–50', run: ctx => { const ns = shuffle(Array.from({ length: 20 }, (_, i) => i + 31)).slice(0, 6).sort((a, b) => a - b); runMeet(ctx, ns, n => `<div class="big">${n}</div>${tensHTML(n)}`, (n, card) => countAlong(card, n)); } },
+  { id: 'nu-count50', unit: 'numbers', title: 'Count to 50', glyph: emo('👆'), run: ctx => runCount(ctx, 4, 31, 50) },
+  { id: 'nu-meet100', unit: 'numbers', title: 'Meet 51 to 100', glyph: '51–100', run: ctx => { const ns = shuffle(Array.from({ length: 50 }, (_, i) => i + 51)).slice(0, 6).sort((a, b) => a - b); runMeet(ctx, ns, n => `<div class="big mid">${n}</div>${tensHTML(n)}`, (n, card) => countAlong(card, n)); } },
+  { id: 'nu-count100', unit: 'numbers', title: 'Count to 100', glyph: emo('💯'), run: ctx => runCount(ctx, 4, 51, 100) },
+  { id: 'nu-next', unit: 'numbers', title: 'What comes next?', glyph: emo('➡️'), run: ctx => runPick(ctx, 6, () => { const n = 3 + rand(97); return { show: `${n - 2}, ${n - 1}, ?`, showClass: 'word', text: 'What number comes next?', say: `${numWord(n - 2)}, ${numWord(n - 1)}. What comes next?`, hint: `Try again! What comes after ${numWord(n - 1)}?`, choiceClass: 'small', choices: numChoices(n, 1, 100).map(x => ({ html: String(x), ok: x === n, label: String(x) })), onRight: `${numWord(n)}!` }; }) },
+  { id: 'nu-find100', unit: 'numbers', title: 'Numbers 1 to 100', glyph: emo('🏆'), run: ctx => { const all = Array.from({ length: 100 }, (_, i) => i + 1), dk = deckOf(all); runPick(ctx, 8, () => { const n = dk(); return { text: 'Listen, then find it!', say: `Find the number ${numWord(n)}.`, hint: `Try again! Find ${numWord(n)}.`, choiceClass: 'small', choices: numChoices(n, 1, 100).map(x => ({ html: String(x), ok: x === n, label: String(x) })) }; }); } },
   /* Letters */
   ...[['le-ah', 'Meet A to H', 0, 8], ['le-ip', 'Meet I to P', 8, 16], ['le-qz', 'Meet Q to Z', 16, 26]].flatMap(([id, title, a, b], gi) => {
     const set = ABC.slice(a, b), meet = { id, unit: 'letters', title, glyph: `${set[0][0]}–${set[set.length - 1][0]}`, run: ctx => runMeet(ctx, set, ([L, w, e]) => `<div class="big">${L}${L.toLowerCase()}</div>${emo(e, 'big-e')}<div class="cap">${L} is for ${w}</div>`, ([L, w]) => () => { speakSeq([{ t: letterName(L) + '.', rate: .85 }, { t: `is for ${w}.` }]); return `${letterName(L)} is for ${w}.`; }) };
@@ -1460,7 +1545,7 @@ function showMap(unitId, finishedId) {
   body.innerHTML = `<div class="learn-map">
     <div class="unit-tabs">${UNITS.map(u => { const all = LESSONS.filter(l => l.unit === u.id), dn = all.filter(l => learn.done[l.id]).length; return `<button class="utab ${u.id === uid ? 'on' : ''}" data-u="${u.id}" style="--c:${u.color}" aria-label="${u.name}">${u.icon}<span class="prog">${dn}/${all.length}</span></button>`; }).join('')}</div>
     <div class="unit-title">${U.name}</div><div class="unit-sub">${U.sub}</div>
-    <div class="stones ${ls.length > 8 ? 'many' : ''}">${ls.map(l => `<button class="stone ${nx && nx.id === l.id ? 'next' : ''}" data-l="${l.id}" aria-label="${l.title}"><div class="disc" style="--c:${U.color}">${l.glyph}${learn.done[l.id] ? '<svg class="badge"><use href="#star"/></svg>' : ''}</div><span class="label">${l.title}</span>${nx && nx.id === l.id ? '<svg class="here dino" viewBox="0 0 230 200"><use href="#dino"/></svg>' : ''}</button>`).join('')}</div>
+    <div class="stones ${ls.length > 14 ? 'many lots' : ls.length > 8 ? 'many' : ''}">${ls.map(l => `<button class="stone ${nx && nx.id === l.id ? 'next' : ''}" data-l="${l.id}" aria-label="${l.title}"><div class="disc" style="--c:${U.color}">${l.glyph}${learn.done[l.id] ? '<svg class="badge"><use href="#star"/></svg>' : ''}</div><span class="label">${l.title}</span>${nx && nx.id === l.id ? '<svg class="here dino" viewBox="0 0 230 200"><use href="#dino"/></svg>' : ''}</button>`).join('')}</div>
   </div><button class="voicebtn" aria-label="Choose the voice">${ICON.speak}<span>Voice</span></button>`;
   $('.voicebtn', body).addEventListener('click', () => { sfx.click(); voicePanel(); });
   $$('.utab', body).forEach(b => b.addEventListener('click', () => { sfx.click(); showMap(b.dataset.u); speak(UNITS.find(u => u.id === b.dataset.u).name); }));
