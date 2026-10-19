@@ -58,6 +58,19 @@ button:focus-visible{outline:4px solid var(--gold);outline-offset:4px}
 #homeBtn{left:max(18px,calc(env(safe-area-inset-left,0px) + 18px))}
 #soundBtn{right:max(18px,calc(env(safe-area-inset-right,0px) + 18px))}
 #soundBtn.off{opacity:.55}
+#buddy{position:fixed;z-index:31;top:calc(env(safe-area-inset-top,0px) + 8px);left:calc(max(18px,calc(env(safe-area-inset-left,0px) + 18px)) + 78px);width:92px;height:80px;padding:0}
+#buddy svg{width:100%;height:100%;filter:drop-shadow(0 6px 10px rgba(20,6,38,.45))}
+#buddy:active{transform:scale(.92)}
+.talker.talk{animation:talk .34s ease-in-out infinite!important}
+@keyframes talk{0%,100%{transform:translateY(0) scale(1,1)}50%{transform:translateY(-4%) scale(1.03,.97)}}
+#bubble{position:fixed;z-index:32;max-width:min(300px,70vw);padding:12px 16px;border-radius:22px 22px 22px 6px;background:#fff7f3;color:var(--plum-deep);font-weight:600;font-size:clamp(16px,2.3vmin,21px);line-height:1.25;
+  box-shadow:0 10px 26px rgba(20,6,38,.35);pointer-events:none;opacity:0;transform:translateY(-100%) scale(.9);transform-origin:0 100%;transition:opacity .25s,transform .25s cubic-bezier(.3,1.5,.5,1)}
+#bubble.saying{opacity:1;transform:translateY(-100%) scale(1)}
+#bubble.below{border-radius:6px 22px 22px 22px;transform:translateY(0) scale(.9);transform-origin:0 0}
+#bubble.below.saying{transform:translateY(0) scale(1)}
+.chips2{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.chips2 button{height:42px;padding:0 16px;border-radius:999px;background:rgba(255,247,243,.12);border:2px solid rgba(255,247,243,.25);font-weight:600;font-size:15px}
+.chips2 button.on{background:var(--cream);color:var(--plum-deep);border-color:var(--cream)}
 #setBtn{right:calc(max(18px,calc(env(safe-area-inset-right,0px) + 18px)) + 80px)}
 #setBtn.needs::after{content:"";position:absolute;top:4px;right:4px;width:14px;height:14px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 3px rgba(46,26,71,.6);animation:ring 1.6s ease-in-out infinite}
 .name .sp{width:.35em}
@@ -429,7 +442,7 @@ button:focus-visible{outline:4px solid var(--gold);outline-offset:4px}
 <div id="app">
   <section id="hub" class="screen">
     <div class="name" id="hubName" aria-label="Lydia"></div>
-    <svg class="dino hub-dino breathe" id="hubDino" viewBox="0 0 230 200" role="img" aria-label="Lydia's dinosaur"><use href="#dino"/></svg>
+    <svg class="dino hub-dino breathe talker" id="hubDino" viewBox="0 0 230 200" role="img" aria-label="Lydia's dinosaur"><use href="#dino"/></svg>
     <div class="portals">
       <button class="portal" data-room="build" style="--c:#e2679f" aria-label="Build a marble run">
         <svg viewBox="0 0 100 100"><g fill="none" stroke="#fff7f3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 30 L60 44" stroke-width="13" stroke-opacity=".45"/><path d="M88 58 L40 72" stroke-width="13" stroke-opacity=".45"/><path d="M12 36 L60 50 M88 64 L40 78" stroke-width="5"/></g><circle cx="24" cy="20" r="11" fill="#fff7f3"/><circle cx="21" cy="17" r="3.5" fill="#e2679f" opacity=".6"/></svg>
@@ -474,6 +487,8 @@ button:focus-visible{outline:4px solid var(--gold);outline-offset:4px}
 </button>
 <svg class="room-star" id="roomStar" aria-hidden="true"><use href="#star"/></svg>
 
+<button id="buddy" class="talker-wrap" aria-label="Hear it again" hidden><svg class="dino talker" viewBox="0 0 230 200"><use href="#dino"/></svg></button>
+<div id="bubble" aria-live="polite"></div>
 <div id="travel" hidden><div class="runner"><svg class="dino" viewBox="0 0 230 200"><use href="#dino"/></svg></div></div>
 
 <div id="finale" hidden>
@@ -868,14 +883,30 @@ function travel(swap) {
   setTimeout(() => { swap(); $('#app').classList.remove('dim'); }, 560);
   setTimeout(() => { t.hidden = true; r.classList.remove('go'); }, 1350);
 }
+const ROOM_INTRO = {
+  build: 'Let\u2019s build a marble run! Tap a tube to add it. Then tap the marble to roll it.',
+  music: 'Let\u2019s make music! Tap the pipes.',
+  learn: 'Let\u2019s learn together! Tap the glowing stone.',
+  nests: 'Can you put each egg in the nest that matches?',
+  art: 'Time for art! Pick a picture to color, or tap Paint.',
+  match: 'Let\u2019s play matching! Flip two cards to find a pair.'
+};
 function go(room) {
+  hush();
   travel(() => {
     clearLater(); if (cleanup) { cleanup(); cleanup = null; }
     $('#roomStar').classList.remove('show'); lullPaused = false; current = room;
-    if (room) { show('room'); build[room](); if (done.has(room)) $('#roomStar').classList.add('show'); }
-    else { show('hub'); $('#roomBody').innerHTML = ''; refreshHub(); if (done.size === $$('.portal').length) setTimeout(finale, 700); }
+    $('#buddy').hidden = !room;
+    if (room) { show('room'); build[room](); if (done.has(room)) $('#roomStar').classList.add('show'); setTimeout(() => { if (current === room) speak(ROOM_INTRO[room]); }, 750); }
+    else {
+      show('hub'); $('#roomBody').innerHTML = ''; refreshHub();
+      if (done.size === $$('.portal').length) setTimeout(finale, 700);
+      else setTimeout(() => { if (current === null) speak(`Where should we go next${nm()}?`); }, 700);
+    }
   });
 }
+$('#buddy').addEventListener('click', () => { if (lastSaid) lastSaid(); else speak('Hi! I\u2019m here to help.'); });
+addEventListener('resize', () => { if ($('#bubble').classList.contains('saying')) placeBubble(); });
 function refreshHub() { $$('.portal').forEach(p => p.classList.toggle('done', done.has(p.dataset.room))); }
 function markDone(room) { if (!done.has(room)) { done.add(room); $('#roomStar').classList.add('show'); tone(SCALE[9], .3, 1.4, .1); } }
 $$('.portal').forEach(p => p.addEventListener('click', () => { sfx.chime(); go(p.dataset.room); }));
@@ -885,7 +916,15 @@ $('#hubDino').addEventListener('pointerdown', e => {
   sfx.giggle(); d.classList.remove('breathe'); restart(d, 'hop');
   const [x, y] = centerOf(d); burst(x, y - 40, 10, .5);
   setTimeout(() => { d.classList.remove('hop'); d.classList.add('breathe'); }, 600);
+  const lines = [`Hi${nm(' ')}! I\u2019m your dino friend!`, 'Where should we go today?', 'Tap a circle to pick a game!', 'Rawr! That tickles!', `I love playing with you${nm()}!`];
+  setTimeout(() => speak(lines[rand(lines.length)]), 350);
 });
+/* First tap on the home screen: the dino says hello. */
+let greeted = false;
+document.addEventListener('pointerup', () => {
+  if (greeted) return; greeted = true;
+  setTimeout(() => { if (current === null && $('#travel').hidden) speak(`Hi${nm(' ')}! Let\u2019s play! Tap a circle to pick a game.`); }, 400);
+}, true);
 function finale() {
   const f = $('#finale'); f.hidden = false; lullPaused = true;
   sfx.fanfare(); waveName($('#finaleName'));
@@ -1016,13 +1055,26 @@ function pickVoice() {
   voice = (saved && vs.find(v => v.name === saved)) || vs[0] || null;
 }
 try { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; } catch (e) {}
+/* Voice style (Settings): slower and higher by default so it sounds like a little friend. */
+const VOICE_RATES = { slower: .68, slow: .78, normal: .92 };
+const voiceOpts = Object.assign({ rate: 'slow', style: 'kid' }, store.get('dino-voice-opts', {}));
+const baseRate = () => VOICE_RATES[voiceOpts.rate] || .78;
+const basePitch = () => isKidVoice(voice) ? (voiceOpts.style === 'kid' ? 1.12 : 1.0) : (voiceOpts.style === 'kid' ? 1.45 : 1.12);
+function utter(text, rateMul = 1) {
+  const u = new SpeechSynthesisUtterance(text); u.lang = 'en-US';
+  if (voice) u.voice = voice;
+  u.rate = baseRate() * rateMul; u.pitch = basePitch();
+  return u;
+}
+let lastSaid = null;
 function speak(text, cancel = true) {
   try {
     const s = window.speechSynthesis; if (!s || !text) return;
     if (cancel) s.cancel();
-    const u = new SpeechSynthesisUtterance(text); u.lang = 'en-US';
-    if (voice) u.voice = voice;
-    if (isKidVoice(voice)) { u.rate = .95; u.pitch = 1.05; } else { u.rate = .92; u.pitch = 1.25; }
+    const u = utter(text);
+    u.onstart = () => buddyTalk(text); u.onend = u.onerror = () => buddyQuiet();
+    buddyTalk(text, true);
+    lastSaid = () => speak(text);
     s.speak(u);
   } catch (e) {}
 }
@@ -1033,15 +1085,44 @@ function speakSeq(parts) {
   try {
     const s = window.speechSynthesis; if (!s) return st;
     s.cancel();
-    const kid = isKidVoice(voice);
-    parts.forEach(pt => {
-      const u = new SpeechSynthesisUtterance(pt.t); u.lang = 'en-US'; if (voice) u.voice = voice;
-      u.rate = (pt.rate || 1) * (kid ? .95 : .92); u.pitch = kid ? 1.05 : 1.25;
-      u.onstart = () => { st.started = true; if (pt.on) pt.on(); };
+    const all = parts.map(pt => pt.t).join(' ').replace(/\.\s+(?=[a-z])/g, ' ');
+    buddyTalk(all, true);
+    lastSaid = () => speakSeq(parts);
+    parts.forEach((pt, i) => {
+      const u = utter(pt.t, pt.rate || 1);
+      u.onstart = () => { st.started = true; buddyTalk(all); if (pt.on) pt.on(); };
+      if (i === parts.length - 1) u.onend = u.onerror = () => buddyQuiet();
       s.speak(u);
     });
   } catch (e) {}
   return st;
+}
+/* ---- the purple dino buddy: talks while the voice speaks, shows a speech bubble, repeats when tapped ---- */
+let quietT = null;
+function buddyTalk(text, provisional) {
+  clearTimeout(quietT);
+  const bub = document.getElementById('bubble'); if (!bub) return;
+  bub.textContent = text.length > 110 ? text.slice(0, 107) + '\u2026' : text;
+  placeBubble(); bub.classList.add('saying');
+  document.querySelectorAll('.talker').forEach(d => d.classList.add('talk'));
+  /* If the device never reports the end of speech, settle down after a sensible time. */
+  quietT = setTimeout(buddyQuiet, Math.min(14000, 1600 + text.length * 95 / baseRate()));
+}
+function buddyQuiet() {
+  clearTimeout(quietT);
+  quietT = setTimeout(() => {
+    const bub = document.getElementById('bubble'); if (bub) bub.classList.remove('saying');
+    document.querySelectorAll('.talker').forEach(d => d.classList.remove('talk'));
+  }, 700);
+}
+function placeBubble() {
+  const bub = document.getElementById('bubble'), onHub = !document.getElementById('hub').hidden;
+  const anchor = onHub ? document.getElementById('hubDino') : document.getElementById('buddy');
+  if (!anchor || !bub) return;
+  const r = anchor.getBoundingClientRect();
+  bub.classList.toggle('below', !onHub);
+  if (onHub) { bub.style.left = Math.min(innerWidth - 300, r.right - r.width * .22) + 'px'; bub.style.top = (r.top + r.height * .08) + 'px'; }
+  else { bub.style.left = (r.left + r.width * .55) + 'px'; bub.style.top = (r.bottom + 4) + 'px'; }
 }
 function syncedSay(parts, gap = 1100) {
   const st = speakSeq(parts);
@@ -1067,12 +1148,20 @@ function openSettings() {
       <div class="set-label">Child’s name</div>
       <input id="kidIn" class="set-input" maxlength="14" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Name" aria-label="Child's name">
       <div class="vp-sub">Shown on the home screen and said by the voice. Leave it empty for no name.</div>
+      <div class="set-label">Voice speed</div>
+      <div class="chips2" id="sRate"><button data-v="slower">Slower</button><button data-v="slow">Slow</button><button data-v="normal">Normal</button></div>
+      <div class="set-label">Voice style</div>
+      <div class="chips2" id="sStyle"><button data-v="kid">Kid</button><button data-v="natural">Natural</button></div>
       <div class="set-row"><button class="vp-done soft" id="sVoice">Voice…</button><button class="vp-done" id="sSave">Save</button></div>
       <div class="set-sep"></div>
       <button class="set-danger" id="sReset">Reset all progress</button>
       <div class="set-foot">No accounts and no tracking. Everything is saved only on this device, and the game works offline after it has been opened once.</div>
     </div>`;
     const ki = $('#kidIn', ov); ki.value = kidName;
+    const syncChips = () => { $$('#sRate button', ov).forEach(b => b.classList.toggle('on', b.dataset.v === voiceOpts.rate)); $$('#sStyle button', ov).forEach(b => b.classList.toggle('on', b.dataset.v === voiceOpts.style)); };
+    $$('#sRate button', ov).forEach(b => b.addEventListener('click', () => { voiceOpts.rate = b.dataset.v; store.set('dino-voice-opts', voiceOpts); syncChips(); speak('This is how fast I talk.'); }));
+    $$('#sStyle button', ov).forEach(b => b.addEventListener('click', () => { voiceOpts.style = b.dataset.v; store.set('dino-voice-opts', voiceOpts); syncChips(); speak('Hi! This is my voice.'); }));
+    syncChips();
     const save = () => {
       kidName = ki.value.replace(/[^\p{L}\p{M}' -]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 14);
       store.set('dino-kid-name', kidName); applyName(); sfx.chime();
@@ -1100,7 +1189,7 @@ function voicePanel() {
   $('.vp-done', ov).addEventListener('click', close);
   ov.addEventListener('click', e => { if (e.target === ov) close(); });
 }
-const hush = () => { try { speechSynthesis.cancel(); } catch (e) {} };
+const hush = () => { try { speechSynthesis.cancel(); } catch (e) {} buddyQuiet(); };
 const PRAISE = ['Great job!', 'You did it!', 'Yes! That’s right!', 'Wonderful!', 'Way to go!', 'Perfect!', 'You’re so smart!'];
 const praise = () => { const list = kidName ? [...PRAISE, `Super, ${kidName}!`, `Great job, ${kidName}!`] : PRAISE; return list[rand(list.length)]; };
 const NUMW = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
