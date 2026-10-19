@@ -82,6 +82,44 @@ button:focus-visible{outline:4px solid var(--gold);outline-offset:4px}
 .potty-later{background:radial-gradient(circle at 35% 25%,rgba(255,255,255,.45),transparent 45%),#c9a6ff;color:var(--plum-deep)}
 .potty-btns button:active{transform:scale(.94)}
 .potty-yes.ready{animation:ring 1.4s ease-in-out infinite}
+#pgame{position:fixed;inset:0;z-index:95;display:flex;flex-direction:column;gap:1.6vh;padding:calc(env(safe-area-inset-top,0px) + 12px) max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 12px) max(16px,env(safe-area-inset-left,0px));
+  background:linear-gradient(180deg,#bfe6ff 0%,#d7f0ff 40%,#bfe9c4 100%);color:var(--plum-deep)}
+.pg-top{display:flex;align-items:center;gap:14px;flex:none}
+.pg-dino{width:clamp(70px,11vmin,100px);flex:none}
+.pg-status{flex:1;min-width:0;font-size:clamp(20px,3.4vmin,32px);font-weight:700;line-height:1.15}
+.pg-timer{display:flex;align-items:center;gap:8px;flex:none}
+.pg-timer .emoji{font-size:28px}
+.pg-bar{width:clamp(90px,16vmin,170px);height:16px;border-radius:999px;background:rgba(46,26,71,.15);overflow:hidden}
+.pg-bar i{display:block;height:100%;width:100%;border-radius:999px;background:linear-gradient(90deg,#ff8fc2,#ffd27a);transition:width 1s linear}
+.pg-done{flex:none;height:54px;padding:0 20px;border-radius:999px;background:#fff;color:var(--plum-deep);font-weight:700;font-size:18px;box-shadow:0 6px 14px rgba(46,26,71,.2)}
+.pg-boards{flex:1;min-height:0;display:flex;gap:3vmin;align-items:center;justify-content:center}
+.pg-side{display:flex;flex-direction:column;align-items:center;gap:8px;transition:transform .35s,opacity .35s}
+.pg-side.waiting{opacity:.6;transform:scale(.94)}
+.pg-label{font-size:clamp(18px,2.8vmin,26px);font-weight:700}
+.pg-board{--n:6;position:relative;width:min(44vw,calc(100vh - 230px),560px);aspect-ratio:1;display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));grid-template-rows:repeat(var(--n),minmax(0,1fr));gap:4px;padding:8px;border-radius:24px;background:#6cbf72;box-sizing:border-box;box-shadow:0 14px 30px rgba(46,26,71,.25),inset 0 0 0 4px rgba(255,255,255,.35)}
+.mine .pg-board{background:#8fcf7d}
+.pg-cell{position:relative;min-width:0;min-height:0;padding:0;border-radius:10px;background:#9bdc8a;box-shadow:inset 0 -4px 0 rgba(46,90,40,.18);display:grid;place-items:center;overflow:hidden}
+.pg-cell:nth-child(odd){background:#a8e397}
+.pg-board.active .pg-cell:not(.tried){cursor:pointer}
+.pg-board.active .pg-cell:not(.tried):active{transform:scale(.9)}
+.pg-cell svg{width:86%;height:86%;pointer-events:none}
+.pg-cell.miss svg{animation:bloom .5s cubic-bezier(.3,1.7,.5,1)}
+.pg-cell.hit{background:#ffe9a8!important}
+.pg-cell.hit svg{animation:bloom .5s cubic-bezier(.3,1.7,.5,1)}
+@keyframes bloom{0%{transform:scale(0) rotate(-40deg)}100%{transform:none}}
+.pg-dinos{position:absolute;inset:8px;pointer-events:none}
+.pg-found{position:absolute;display:grid;place-items:center;border-radius:14px;background:rgba(255,255,255,.55);box-shadow:0 0 0 3px rgba(255,210,122,.9);animation:settle .6s cubic-bezier(.3,1.7,.5,1)}
+.pg-found svg{width:96%;height:96%}
+.mine .pg-found.pg-ghost{background:rgba(255,255,255,.3);box-shadow:none;animation:none;opacity:.75}
+.mine .pg-found.pg-ghost.got{background:rgba(255,140,140,.35);opacity:1}
+.pg-end{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.4vh;background:rgba(255,247,243,.82);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);text-align:center;padding:20px}
+.pg-end-dino{width:min(36vmin,300px)}
+.pg-end-msg{font-size:clamp(28px,5vmin,48px);font-weight:700;max-width:820px;text-wrap:balance}
+.pg-end-btns{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.pg-end-btns button{height:66px;padding:0 30px;border-radius:999px;font-weight:700;font-size:22px;box-shadow:0 10px 22px rgba(46,26,71,.25)}
+.pg-end-btns .go{background:#7fd8c3;color:var(--plum-deep)}
+.pg-end-btns .back{background:#c9a6ff;color:var(--plum-deep)}
+@media (orientation:portrait){.pg-boards{flex-direction:column}.pg-board{width:min(86vw,calc((100vh - 280px)/2))}}
 #setBtn{right:calc(max(18px,calc(env(safe-area-inset-right,0px) + 18px)) + 80px)}
 #setBtn.needs::after{content:"";position:absolute;top:4px;right:4px;width:14px;height:14px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 3px rgba(46,26,71,.6);animation:ring 1.6s ease-in-out infinite}
 .name .sp{width:.35em}
@@ -95,6 +133,13 @@ button:focus-visible{outline:4px solid var(--gold);outline-offset:4px}
 .set-sep{height:1px;background:rgba(255,247,243,.2);margin:4px 0}
 .set-danger{align-self:center;height:44px;padding:0 20px;border-radius:999px;border:2px solid rgba(255,140,140,.6);color:#ffc2c2;font-weight:600;font-size:15px}
 .set-danger.armed{background:#ff6b6b;color:#fff;border-color:#ff6b6b}
+.set-toggle{display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:16px;font-weight:600}
+.switch{flex:none;width:60px;height:34px;border-radius:999px;background:rgba(255,247,243,.22);position:relative;transition:background .2s}
+.switch::after{content:"";position:absolute;top:4px;left:4px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(20,6,38,.35);transition:transform .2s}
+.switch.on{background:#7fd8c3}.switch.on::after{transform:translateX(26px)}
+.set-group{display:flex;flex-direction:column;gap:10px;transition:opacity .2s}
+.set-group.off{opacity:.35;pointer-events:none}
+.voice-panel{overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y}
 .set-foot{font-size:13px;opacity:.75;text-align:center;line-height:1.35}
 
 /* ---------- dino ---------- */
@@ -520,6 +565,23 @@ button:focus-visible{outline:4px solid var(--gold);outline-offset:4px}
     </div>
   </div>
 </div>
+<div id="pgame" hidden>
+  <div class="pg-top">
+    <svg class="dino talker pg-dino" viewBox="0 0 230 200"><use href="#dino"/></svg>
+    <div class="pg-status" id="pgStatus" aria-live="polite"></div>
+    <div class="pg-timer" aria-label="Time left"><span class="emoji">🌼</span><div class="pg-bar"><i id="pgBar"></i></div></div>
+    <button class="pg-done" id="pgDone">✓ I'm done</button>
+  </div>
+  <div class="pg-boards">
+    <div class="pg-side"><div class="pg-label">Find my dinos!</div><div class="pg-board" id="pgThem"></div></div>
+    <div class="pg-side mine"><div class="pg-label">Your garden</div><div class="pg-board" id="pgMine"></div></div>
+  </div>
+  <div class="pg-end" id="pgEnd" hidden>
+    <svg class="dino talker pg-end-dino" viewBox="0 0 230 200"><use href="#dino"/></svg>
+    <div class="pg-end-msg" id="pgEndMsg"></div>
+    <div class="pg-end-btns" id="pgEndBtns"></div>
+  </div>
+</div>
 <div id="travel" hidden><div class="runner"><svg class="dino" viewBox="0 0 230 200"><use href="#dino"/></svg></div></div>
 
 <div id="finale" hidden>
@@ -830,7 +892,7 @@ document.addEventListener('pointerdown', () => {
   audio();
   if (!unlocked) { unlocked = true; try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {} }
 }, true);
-document.addEventListener('touchmove', e => { if (!(e.target.closest && e.target.closest('.gallery'))) e.preventDefault(); }, { passive: false });
+document.addEventListener('touchmove', e => { if (!(e.target.closest && e.target.closest('.gallery, .voice-panel'))) e.preventDefault(); }, { passive: false });
 document.addEventListener('gesturestart', e => e.preventDefault());
 document.addEventListener('contextmenu', e => e.preventDefault());
 $('#soundBtn').addEventListener('click', () => { musicOn = !musicOn; $('#soundBtn').classList.toggle('off', !musicOn); $('#slash').setAttribute('opacity', musicOn ? 0 : 1); });
@@ -938,13 +1000,16 @@ function go(room) {
 }
 /* ---- Potty timer: after an hour of continuous play the dino asks; either answer starts the next hour.
    Only counts while the game is on screen; a break of 15+ minutes starts the count fresh. ---- */
-const potty = Object.assign({ mins: 60, played: 0, lastSeen: Date.now() }, store.get('dino-potty', {}));
+const pottySaved = store.get('dino-potty', null);
+const potty = Object.assign({ on: hadPlay, mins: 60, game: true, played: 0, lastSeen: Date.now() }, pottySaved || {});
+if (pottySaved && pottySaved.on === undefined) potty.on = pottySaved.mins !== 0;
+if (!potty.mins) potty.mins = 60;
 if (Date.now() - potty.lastSeen > 15 * 60000) potty.played = 0;
 let pottyOpen = false, pottyTick = Date.now();
 const savePotty = () => { potty.lastSeen = Date.now(); store.set('dino-potty', potty); };
 setInterval(() => {
   const now = Date.now(), dt = now - pottyTick; pottyTick = now;
-  if (document.hidden || pottyOpen || !potty.mins) return;
+  if (document.hidden || pottyOpen || !potty.on) return;
   if (dt > 0 && dt < 60000) potty.played += dt;
   savePotty();
   if (potty.played >= potty.mins * 60000) askPotty();
@@ -969,7 +1034,134 @@ function closePotty(msg) {
   speak(msg);
   setTimeout(() => { $('#potty').hidden = true; pottyOpen = false; lullPaused = current !== null && ['music', 'learn', 'build'].includes(current); }, 2600);
 }
-$('#pottyYes').addEventListener('click', () => { const [x, y] = centerOf($('#pottyYes')); burst(x, y, 40, 1); sfx.fanfare(); closePotty(`Great job listening to your body${nm()}! Go potty, and I'll wait right here.`); });
+$('#pottyYes').addEventListener('click', () => {
+  const [x, y] = centerOf($('#pottyYes')); burst(x, y, 40, 1); sfx.fanfare();
+  if (!potty.game) return closePotty(`Great job listening to your body${nm()}! Go potty, and I'll wait right here.`);
+  potty.played = 0; savePotty(); $('#pottyYes').classList.remove('ready');
+  speak(`Great job listening to your body${nm()}! Let\u2019s play a potty game while you go!`);
+  setTimeout(() => { $('#potty').hidden = true; openPottyGame(); }, 2400);
+});
+
+/* ---------------- Potty game: Dino Hide & Seek (battleship with dinos and flowers), 10 minutes total ---------------- */
+const PG = { N: 6, SIZES: [3, 2, 2], MINUTES: 10 };
+const PG_DINOS = [['longneck', 'long neck'], ['trike', 'triceratops'], ['stego', 'stegosaurus'], ['rex', 'T-rex'], ['ptero', 'pterodactyl']];
+let pg = null;
+function pgPlace() {
+  const ships = [], taken = new Set(), kinds = shuffle(PG_DINOS).slice(0, PG.SIZES.length);
+  PG.SIZES.forEach((len, k) => {
+    for (let tries = 0; tries < 500; tries++) {
+      const h = Math.random() < .6, r = rand(h ? PG.N : PG.N - len + 1), c = rand(h ? PG.N - len + 1 : PG.N);
+      const cells = Array.from({ length: len }, (_, j) => (h ? r : r + j) * PG.N + (h ? c + j : c));
+      if (cells.some(i => taken.has(i))) continue;
+      cells.forEach(i => taken.add(i));
+      ships.push({ cells, h, r, c, len, kind: kinds[k][0], name: kinds[k][1], color: PAL[(k * 3 + rand(3)) % PAL.length], found: 0 }); break;
+    }
+  });
+  return ships;
+}
+function pgDinoSVG(ship) { const D = DINOS[ship.kind]; return `<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">${D.svg(ship.color, shade(ship.color, .72))}</svg>`; }
+const PG_FLOWER_COLS = [['#ff8fc2', '#ffd27a'], ['#ffd27a', '#ff6b6b'], ['#b48cf0', '#ffffff'], ['#6fb2ff', '#ffd27a'], ['#ff6b6b', '#ffd27a']];
+const pgFlower = () => { const [a, b] = PG_FLOWER_COLS[rand(PG_FLOWER_COLS.length)]; return `<svg viewBox="0 0 100 100">${FLOWERS[['daisy', 'round', 'tulip'][rand(3)]](a, b)}</svg>`; };
+const PG_SPARK = '<svg viewBox="0 0 100 100"><use href="#star"/></svg>';
+function pgBoxStyle(ship) { const u = 100 / PG.N; return `left:${ship.c * u}%;top:${ship.r * u}%;width:${(ship.h ? ship.len : 1) * u}%;height:${(ship.h ? 1 : ship.len) * u}%`; }
+function pgStatus(text, say) { $('#pgStatus').textContent = text; if (say) speak(say === true ? text : say); }
+function openPottyGame() {
+  const ov = $('#pgame'); ov.hidden = false; pottyOpen = true; lullPaused = true;
+  pg = { endAt: Date.now() + PG.MINUTES * 60000, timers: [], over: false };
+  pg.tick = setInterval(() => {
+    const left = pg.endAt - Date.now();
+    $('#pgBar').style.width = Math.max(0, left / (PG.MINUTES * 60000) * 100) + '%';
+    if (left <= 0) pgTimeUp();
+  }, 1000);
+  pgRound(true);
+}
+function pgLater(fn, ms) { const id = setTimeout(fn, ms); pg.timers.push(id); return id; }
+function pgRound(first) {
+  pg.timers.forEach(clearTimeout); pg.timers = [];
+  pg.them = pgPlace(); pg.mine = pgPlace(); pg.kidTurn = true; pg.over = false;
+  pg.triedThem = new Set(); pg.triedMine = new Set();
+  $('#pgEnd').hidden = true;
+  const build = (el, mine) => {
+    el.style.setProperty('--n', PG.N);
+    el.innerHTML = Array.from({ length: PG.N * PG.N }, (_, i) => `<button class="pg-cell" data-i="${i}" aria-label="Square"></button>`).join('') + '<div class="pg-dinos"></div>';
+    if (mine) $('.pg-dinos', el).innerHTML = pg.mine.map((sh, k) => `<div class="pg-found pg-ghost" data-k="${k}" style="${pgBoxStyle(sh)}">${pgDinoSVG(sh)}</div>`).join('');
+  };
+  build($('#pgThem'), false); build($('#pgMine'), true);
+  $$('#pgThem .pg-cell').forEach(b => b.addEventListener('click', () => pgKidTap(+b.dataset.i, b)));
+  pgSetTurn(true, first ? `Your turn${nm()}! Tap a square to plant a flower and find my hiding dinos!` : 'Your turn! Find my dinos!');
+}
+function pgSetTurn(kid, say) {
+  pg.kidTurn = kid;
+  $('#pgThem').classList.toggle('active', kid);
+  $('#pgThem').parentElement.classList.toggle('waiting', !kid);
+  $('#pgMine').parentElement.classList.toggle('waiting', kid);
+  pgStatus(kid ? 'Your turn! Tap a square.' : 'My turn\u2026', say || null);
+}
+function pgMark(ships, tried, i, cellEl, dinoLayer, mine) {
+  tried.add(i); cellEl.classList.add('tried');
+  const ship = ships.find(sh => sh.cells.includes(i));
+  if (!ship) { cellEl.classList.add('miss'); cellEl.innerHTML = pgFlower(); return { hit: false }; }
+  cellEl.classList.add('hit'); cellEl.innerHTML = PG_SPARK; ship.found++;
+  const sunk = ship.found === ship.len;
+  if (sunk) {
+    if (mine) { const g = $(`.pg-found[data-k="${ships.indexOf(ship)}"]`, dinoLayer); if (g) g.classList.add('got'); }
+    else dinoLayer.insertAdjacentHTML('beforeend', `<div class="pg-found" style="${pgBoxStyle(ship)}">${pgDinoSVG(ship)}</div>`);
+  }
+  return { hit: true, sunk, ship, all: ships.every(sh => sh.found === sh.len) };
+}
+function pgKidTap(i, el) {
+  if (!pg || pg.over || !pg.kidTurn || pg.triedThem.has(i)) return;
+  const res = pgMark(pg.them, pg.triedThem, i, el, $('#pgThem .pg-dinos'), false);
+  if (!res.hit) { tone(SCALE[2 + rand(4)], 0, .5, .09); pgSetTurn(false); pgLater(pgBuddyTurn, 1300); return; }
+  const [x, y] = centerOf(el);
+  if (res.all) { burst(x, y, 60, 1.2); return pgWin(true, res.ship); }
+  if (res.sunk) { sfx.giggle(); burst(x, y, 40, 1); pgStatus(`You found my ${res.ship.name}!`, true); pg.kidTurn = false; $('#pgThem').classList.remove('active'); pgLater(() => { pgSetTurn(false); pgBuddyTurn(); }, 2600); }
+  else { sfx.snap(); burst(x, y, 14, .5); pgStatus('A dino is hiding there!', true); pg.kidTurn = false; $('#pgThem').classList.remove('active'); pgLater(() => { pgSetTurn(false); pgLater(pgBuddyTurn, 900); }, 1600); }
+}
+function pgBuddyTurn() {
+  if (!pg || pg.over) return;
+  const open = [...Array(PG.N * PG.N).keys()].filter(i => !pg.triedMine.has(i));
+  const i = open[rand(open.length)], el = $(`#pgMine .pg-cell[data-i="${i}"]`);
+  const res = pgMark(pg.mine, pg.triedMine, i, el, $('#pgMine .pg-dinos'), true);
+  if (!res.hit) { tone(SCALE[1 + rand(3)], 0, .4, .07); pgLater(() => pgSetTurn(true), 900); return; }
+  if (res.all) return pgWin(false, res.ship);
+  sfx.boing(.1);
+  if (res.sunk) { pgStatus(`I found your ${res.ship.name}!`, true); pgLater(() => pgSetTurn(true, 'Your turn!'), 2500); }
+  else { pgStatus('Ooh, I found a dino spot!', true); pgLater(() => pgSetTurn(true, 'Your turn!'), 2000); }
+}
+function pgWin(kidWon, ship) {
+  pg.over = true; pgSetTurn(false); $('#pgThem').classList.remove('active');
+  pgLater(() => {
+    if (kidWon) { bigCelebrate(); }
+    else sfx.chime();
+    pgEnd(kidWon ? `You found all my dinos${nm()}! You win!` : 'I found all your dinos! Good game!',
+      [['go', 'Play again', () => pgRound(false)], ['back', '✓ I\u2019m done', pgFinish]]);
+  }, kidWon ? 900 : 1500);
+}
+function pgEnd(msg, btns) {
+  $('#pgEndMsg').textContent = msg; speak(msg);
+  const box = $('#pgEndBtns'); box.innerHTML = '';
+  btns.forEach(([cls, label, fn]) => { const b = document.createElement('button'); b.className = cls; b.textContent = label; b.addEventListener('click', () => { sfx.click(); fn(); }); box.appendChild(b); });
+  $('#pgEnd').hidden = false;
+}
+function pgTimeUp() {
+  if (!pg || pg.timeUp) return; pg.timeUp = true; pg.over = true;
+  pg.timers.forEach(clearTimeout); clearInterval(pg.tick);
+  sfx.chime();
+  pgEnd('Potty time is all done! Remember to flush and wash your hands!', [['go', 'Back to play', pgClose]]);
+}
+function pgFinish() {
+  if (!pg) return; pg.over = true;
+  pg.timers.forEach(clearTimeout);
+  pgEnd(`Yay${nm()}! Don\u2019t forget to flush and wash your hands!`, [['go', 'Back to play', pgClose]]);
+}
+function pgClose() {
+  if (pg) { pg.timers.forEach(clearTimeout); clearInterval(pg.tick); }
+  pg = null; hush();
+  $('#pgame').hidden = true; pottyOpen = false; potty.played = 0; savePotty();
+  lullPaused = current !== null && ['music', 'learn', 'build'].includes(current);
+}
+$('#pgDone').addEventListener('click', () => { sfx.click(); pgFinish(); });
 $('#pottyLater').addEventListener('click', () => { sfx.click(); closePotty('Okay! I\u2019ll ask you again later.'); });
 $('#buddy').addEventListener('click', () => { if (lastSaid) lastSaid(); else speak('Hi! I\u2019m here to help.'); });
 addEventListener('resize', () => { if ($('#bubble').classList.contains('saying')) placeBubble(); });
@@ -1218,8 +1410,16 @@ function openSettings() {
       <div class="chips2" id="sRate"><button data-v="slower">Slower</button><button data-v="slow">Slow</button><button data-v="normal">Normal</button></div>
       <div class="set-label">Voice style</div>
       <div class="chips2" id="sStyle"><button data-v="kid">Kid</button><button data-v="natural">Natural</button></div>
+      <div class="set-sep"></div>
       <div class="set-label">Potty reminder</div>
-      <div class="chips2" id="sPotty"><button data-v="30">30 min</button><button data-v="45">45 min</button><button data-v="60">1 hour</button><button data-v="0">Off</button></div>
+      <div class="set-toggle"><span>Remind my child to go potty</span><button class="switch" id="sPottyOn" role="switch" aria-label="Potty reminder"></button></div>
+      <div id="sPottyMore" class="set-group">
+        <div class="vp-sub">Ask after this much play:</div>
+        <div class="chips2" id="sPotty"><button data-v="30">30 min</button><button data-v="45">45 min</button><button data-v="60">1 hour</button><button data-v="90">1\u00bd hours</button></div>
+        <div class="set-toggle"><span>Play the potty game after \u201cYes\u201d (10 min)</span><button class="switch" id="sPottyGame" role="switch" aria-label="Potty game"></button></div>
+        <button class="vp-done soft" id="sPottyTry" style="align-self:center">Try it now</button>
+      </div>
+      <div class="set-sep"></div>
       <div class="set-row"><button class="vp-done soft" id="sVoice">Voice…</button><button class="vp-done" id="sSave">Save</button></div>
       <div class="set-sep"></div>
       <button class="set-danger" id="sReset">Reset all progress</button>
@@ -1230,8 +1430,16 @@ function openSettings() {
     $$('#sRate button', ov).forEach(b => b.addEventListener('click', () => { voiceOpts.rate = b.dataset.v; store.set('dino-voice-opts', voiceOpts); syncChips(); speak('This is how fast I talk.'); }));
     $$('#sStyle button', ov).forEach(b => b.addEventListener('click', () => { voiceOpts.style = b.dataset.v; store.set('dino-voice-opts', voiceOpts); syncChips(); speak('Hi! This is my voice.'); }));
     syncChips();
-    const syncPotty = () => $$('#sPotty button', ov).forEach(b => b.classList.toggle('on', +b.dataset.v === potty.mins));
+    const syncPotty = () => {
+      $$('#sPotty button', ov).forEach(b => b.classList.toggle('on', +b.dataset.v === potty.mins));
+      $('#sPottyOn', ov).classList.toggle('on', potty.on); $('#sPottyOn', ov).setAttribute('aria-checked', potty.on);
+      $('#sPottyGame', ov).classList.toggle('on', potty.game); $('#sPottyGame', ov).setAttribute('aria-checked', potty.game);
+      $('#sPottyMore', ov).classList.toggle('off', !potty.on);
+    };
     $$('#sPotty button', ov).forEach(b => b.addEventListener('click', () => { potty.mins = +b.dataset.v; potty.played = 0; savePotty(); syncPotty(); sfx.click(); }));
+    $('#sPottyOn', ov).addEventListener('click', () => { potty.on = !potty.on; potty.played = 0; savePotty(); syncPotty(); sfx.click(); });
+    $('#sPottyGame', ov).addEventListener('click', () => { potty.game = !potty.game; savePotty(); syncPotty(); sfx.click(); });
+    $('#sPottyTry', ov).addEventListener('click', () => { close(); askPotty(); });
     syncPotty();
     const save = () => {
       kidName = ki.value.replace(/[^\p{L}\p{M}' -]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 14);
