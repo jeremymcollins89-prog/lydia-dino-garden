@@ -733,9 +733,10 @@ body:has(#songBtn) .room-star{left:calc(50% + 150px)}
 .pr-name{position:absolute;top:3%;left:50%;transform:translateX(-50%);z-index:3;display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:999px;background:rgba(46,26,71,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);font-weight:700;font-size:clamp(16px,2.7vmin,26px);color:#fff7f3;white-space:nowrap}
 .pr-name .emoji{font-size:.95em}.pr-name .pen{font-size:.75em;opacity:.85}
 .pr-name:active{transform:translateX(-50%) scale(.94)}
-.pr-namer{position:absolute;inset:0;z-index:8;display:grid;place-items:center;background:rgba(30,12,50,.45);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
-.prn-card{width:min(92%,560px);max-height:94%;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:12px;background:rgba(58,35,99,.95);border-radius:28px}
-.prn-title{font-size:clamp(24px,4.2vmin,38px);font-weight:700;text-align:center}
+.pr-namer{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:calc(env(safe-area-inset-top,0px) + 16px) 14px calc(env(safe-area-inset-bottom,0px) + 16px);box-sizing:border-box;background:rgba(30,12,50,.6);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.prn-card{position:relative;width:min(100%,560px);max-height:100%;box-sizing:border-box;overflow:auto;padding:18px 18px 20px;display:flex;flex-direction:column;gap:12px;background:rgba(58,35,99,.95);border-radius:28px}
+.prn-x{position:absolute;top:10px;right:10px;width:48px;height:48px;border-radius:50%;background:rgba(255,247,243,.16);color:var(--cream);font-size:22px;font-weight:700;z-index:1}
+.prn-title{padding:0 50px;font-size:clamp(24px,4.2vmin,38px);font-weight:700;text-align:center}
 .prn-chips{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .prn-chip{height:clamp(48px,7.4vmin,66px);border-radius:999px;background:var(--cream);color:var(--plum-deep);font-weight:700;font-size:clamp(17px,2.8vmin,25px)}
 .prn-chip.on{background:var(--gold)}.prn-chip:active{transform:scale(.94)}
@@ -5785,7 +5786,10 @@ build.pet = () => {
         <button class="prc-item ${!st.wear ? 'on' : ''}" data-o=""><span class="emoji">✨</span><small>Nothing</small></button>
         ${PET_OUTFITS.map((o, i) => { const has = st.closet.includes(o.id); return `<button class="prc-item ${has ? '' : 'locked'} ${st.wear === o.id ? 'on' : ''}" data-o="${o.id}" ${has ? '' : 'disabled'}><span class="emoji">${has ? o.icon : '🔒'}</span><small>${has ? o.name : `${(i + 1) * 2 - (st.wishes || 0)} more wish${(i + 1) * 2 - (st.wishes || 0) === 1 ? '' : 'es'}`}</small></button>`; }).join('')}
       </div><div class="prn-note">Grant wishes (tap the 🎁 bubble) to earn new outfits.</div><button class="vp-done" id="prcDone">Done</button></div>`;
-      scene.appendChild(ov); speak(`Dress up ${NAME()}!`, true);
+      trayHost().appendChild(ov); speak(`Dress up ${NAME()}!`, true);
+      $('.prn-card', ov).insertAdjacentHTML('afterbegin', '<button class="prn-x" aria-label="Close">✕</button>');
+      const shut = () => { sfx.click(); ov.remove(); };
+      $('.prn-x', ov).addEventListener('click', shut); ov.addEventListener('click', e => { if (e.target === ov) shut(); });
       $$('.prc-item:not(.locked)', ov).forEach(b => b.addEventListener('click', () => {
         st.wear = b.dataset.o || null; save();
         $$('.prc-item', ov).forEach(x => x.classList.toggle('on', x === b));
@@ -5846,7 +5850,8 @@ build.pet = () => {
         <div class="prn-type"><input class="set-input" maxlength="12" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Or type a name" aria-label="Type a name"><button class="vp-done" id="prnOk">OK</button></div>
         <div class="prn-note">Grown-ups: the dino can say the names on the buttons out loud. A typed name shows on screen; the dino says it only if it knows it.</div>
         ${first ? '' : '<button class="vp-done soft" id="prnClose">Keep this name</button>'}</div>`;
-      scene.appendChild(ov);
+      trayHost().appendChild(ov);
+      if (!first) { $('.prn-card', ov).insertAdjacentHTML('afterbegin', '<button class="prn-x" aria-label="Close">✕</button>'); $('.prn-x', ov).addEventListener('click', () => { sfx.click(); ov.remove(); }); ov.addEventListener('click', e => { if (e.target === ov) { sfx.click(); ov.remove(); } }); }
       speak(`What should we name your ${KIND_WORD()}?`, true);
       const set = n => {
         n = n.replace(/[^\p{L}\p{M}' -]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 12); if (!n) return;
