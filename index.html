@@ -5005,10 +5005,464 @@ const FALL = [
 ];
 FALL.forEach((h, i) => { h.seed = 1901 + i * 7; });
 
+/* ---- Dino World: 20 more dinosaur pictures, with new kinds of dinos ---- */
+const DC2 = {
+  mint: { body: '#8fe0c8', dark: '#3fa38f', mid: '#62c7ad', belly: '#fff6d6', spike: '#ff9fc8', spot: '#ffffff', cheek: '#ff9fb0', eye: '#ffffff', pupil: '#2e1a47' },
+  lilac: { body: '#c9a8f5', dark: '#8a5fd0', mid: '#a982e6', belly: '#fff0f6', spike: '#ffd27a', spot: '#ffffff', cheek: '#ff9fc8', eye: '#ffffff', pupil: '#2e1a47' },
+  coral: { body: '#ff9f8a', dark: '#d9604f', mid: '#f07f6c', belly: '#fff1dc', spike: '#7fd8c3', spot: '#fff1dc', cheek: '#ff6f8a', eye: '#ffffff', pupil: '#2e1a47' },
+  sun: { body: '#ffd56b', dark: '#d99a2b', mid: '#f2b84a', belly: '#fff6d6', spike: '#ff8fc2', spot: '#ffffff', cheek: '#ff9f8a', eye: '#ffffff', pupil: '#2e1a47' },
+  sea: { body: '#7fc4f5', dark: '#3f7fc4', mid: '#5fa3e0', belly: '#e6f6ff', spike: '#b994f2', spot: '#ffffff', cheek: '#ff9fc8', eye: '#ffffff', pupil: '#2e1a47' },
+  rose: { body: '#ff8fbf', dark: '#c9558f', mid: '#ef72a8', belly: '#fff0f6', spike: '#ffd27a', spot: '#ffd1e6', cheek: '#ff5f95', eye: '#ffffff', pupil: '#2e1a47' },
+  leaf: { body: '#a6d96a', dark: '#5f9a3a', mid: '#86c24f', belly: '#fffbd6', spike: '#ff9f6b', spot: '#fffbd6', cheek: '#ff9fb0', eye: '#ffffff', pupil: '#2e1a47' }
+};
+function ankylo(p, x, y, s, flip, c) {
+  p.at(x + (flip ? 100 * s : 0), y, s, 0, flip);
+  p.add('M24 64 C14 64 8 60 5 56 L3 63 C10 70 18 72 27 72Z', c.body);
+  p.add(pE(6, 59, 8, 6.5), c.dark); p.add(pE(6, 59, 4, 3), c.mid);
+  p.add(pRR(28, 68, 10, 18, 5), c.dark); p.add(pRR(62, 68, 10, 18, 5), c.dark);
+  p.add('M20 72 C20 48 38 40 52 40 C66 40 82 48 82 72Z', c.body);
+  [[38, 43], [52, 40], [66, 43], [76, 51], [27, 52]].forEach(([tx, ty]) => p.add(pPL([[tx - 4, ty + 3], [tx, ty - 6], [tx + 4, ty + 3]]), c.spike));
+  [[34, 52, 6, 4], [48, 48, 6, 4], [62, 50, 6, 4], [41, 61, 5, 3.5], [56, 60, 5, 3.5], [71, 61, 4.5, 3.5], [28, 63, 4, 3]].forEach(q => p.add(pE(...q), c.mid));
+  p.add(pE(51, 73, 26, 4), c.belly);
+  p.add(pRR(36, 70, 10, 17, 5), c.mid); p.add(pRR(70, 70, 10, 17, 5), c.mid);
+  p.add(pPL([[80, 57], [77, 51], [84, 55]]), c.spike);
+  p.add(pE(86, 64, 11, 9), c.body); p.add(pE(93, 67, 6.5, 5), c.body);
+  p.add(pE(90, 70, 3, 2), c.cheek);
+  p.add(pC(87, 61, 3.2), c.eye); p.add(pC(87.8, 61.4, 1.9), c.pupil);
+  p.pop();
+}
+function para(p, x, y, s, flip, c) {
+  p.at(x + (flip ? 100 * s : 0), y, s, 0, flip);
+  p.add('M30 56 C18 54 8 50 2 44 C6 56 16 64 30 66Z', c.body);
+  p.add(pRR(36, 60, 11, 28, 5.5), c.dark);
+  p.add(pE(46, 56, 22, 15), c.body);
+  p.add(pRR(49, 62, 11, 26, 5.5), c.mid);
+  p.add(pE(51, 62, 13, 7), c.belly);
+  p.add(pRR(62, 58, 5, 12, 2.5), c.mid);
+  p.add('M58 50 C62 40 66 32 70 26 L80 30 C76 38 70 48 66 58Z', c.body);
+  p.add('M71 23 C63 16 52 9 41 7 C39 9 41 13 45 14 C54 16 62 22 69 29Z', c.spike);
+  p.add(pE(77, 27, 10, 8), c.body); p.add(pE(87, 30, 7, 4.5), c.belly);
+  [[38, 52, 3], [48, 48, 3.4], [30, 58, 2.4], [56, 52, 2.4]].forEach(q => p.add(pC(...q), c.spot));
+  p.add(pE(81, 32, 2.6, 1.6), c.cheek);
+  p.add(pC(76, 24, 3), c.eye); p.add(pC(76.8, 24.3, 1.8), c.pupil);
+  p.pop();
+}
+function spino(p, x, y, s, flip, c) {
+  p.at(x + (flip ? 100 * s : 0), y, s, 0, flip);
+  p.add('M28 58 C16 56 7 52 1 46 C4 58 14 66 29 69Z', c.body);
+  p.add('M30 54 C31 38 40 27 52 27 C64 27 71 38 71 52Z', c.spike);
+  [[40, 40, 2.6], [52, 34, 3], [63, 40, 2.6], [46, 47, 2.2], [58, 47, 2.2]].forEach(q => p.add(pC(...q), c.spot));
+  p.add(pRR(34, 60, 10, 26, 5), c.dark); p.add(pRR(58, 60, 10, 26, 5), c.dark);
+  p.add(pE(50, 58, 26, 13), c.body);
+  p.add(pE(52, 65, 18, 5), c.belly);
+  p.add(pRR(42, 62, 10, 25, 5), c.mid); p.add(pRR(66, 62, 10, 25, 5), c.mid);
+  p.add(pRR(72, 56, 4, 10, 2), c.mid);
+  p.add('M71 47 C77 41 86 41 90 45 L100 49 C101 53 97 56 91 56 L77 56 C72 54 70 51 71 47Z', c.body);
+  p.add(pE(86, 53, 2.6, 1.6), c.cheek);
+  p.add(pC(80, 46, 3), c.eye); p.add(pC(80.8, 46.3, 1.8), c.pupil);
+  p.pop();
+}
+function plesio(p, x, y, s, flip, c) {
+  p.at(x + (flip ? 100 * s : 0), y, s, 0, flip);
+  p.add('M34 62 C26 66 20 74 16 80 C26 79 34 73 40 66Z', c.dark);
+  p.add('M58 62 C60 70 64 78 70 82 C72 74 68 66 64 60Z', c.dark);
+  p.add('M24 56 C16 57 8 60 2 65 C10 65 18 64 26 63Z', c.body);
+  p.add(pE(44, 58, 22, 11), c.body);
+  p.add(pE(46, 63, 15, 5), c.belly);
+  p.add('M58 54 C65 44 68 30 70 20 L78 20 C78 32 74 48 66 61Z', c.body);
+  p.add(pE(78, 18, 10, 7), c.body);
+  p.add('M48 64 C48 72 51 80 56 86 C60 80 58 70 56 62Z', c.mid);
+  [[36, 55, 3], [46, 53, 3.4], [55, 57, 2.4], [70, 34, 2]].forEach(q => p.add(pC(...q), c.spot));
+  p.add(pE(84, 21, 2.4, 1.5), c.cheek);
+  p.add(pC(80, 15, 2.8), c.eye); p.add(pC(80.7, 15.3, 1.7), c.pupil);
+  p.pop();
+}
+function pachy(p, x, y, s, flip, c) {
+  p.at(x + (flip ? 100 * s : 0), y, s, 0, flip);
+  p.add('M34 58 C22 58 12 54 4 48 C8 58 18 66 34 67Z', c.body);
+  p.add(pRR(38, 60, 11, 28, 5.5), c.dark);
+  p.add(pE(50, 56, 20, 15), c.body);
+  p.add(pRR(51, 62, 11, 26, 5.5), c.mid);
+  p.add(pE(55, 62, 11, 8), c.belly);
+  p.add(pRR(65, 57, 5, 11, 2.5), c.mid);
+  p.add('M60 50 C64 45 68 43 73 45 L73 55 C68 57 64 57 60 56Z', c.body);
+  p.add(pE(74, 41, 13, 12), c.body);
+  p.add('M62 39 C62 25 70 19 78 19 C86 19 90 27 88 37 C80 33 70 33 62 39Z', c.spike);
+  [[62, 42, 2.2], [66, 36, 2], [88, 40, 2.2], [84, 33, 1.8]].forEach(q => p.add(pC(...q), c.dark));
+  p.add(pE(84, 47, 7, 5), c.body);
+  [[42, 52, 3], [50, 48, 3.2], [36, 58, 2.2]].forEach(q => p.add(pC(...q), c.spot));
+  p.add(pE(84, 50, 2.4, 1.5), c.cheek);
+  p.add(pC(78, 41, 3), c.eye); p.add(pC(78.8, 41.3, 1.8), c.pupil);
+  p.pop();
+}
+function raptor(p, x, y, s, flip, c) {
+  p.at(x + (flip ? 100 * s : 0), y, s, 0, flip);
+  p.add('M42 52 C28 48 14 46 2 42 C12 52 27 58 41 61Z', c.body);
+  p.add(pPL([[2, 42], [10, 39], [8, 48]]), c.spike);
+  p.add('M44 58 L40 74 L45 88 L52 88 L48 74 L52 60Z', c.dark);
+  p.add(pE(52, 54, 16, 10), c.body);
+  p.add(pE(56, 58, 9, 5), c.belly);
+  p.add('M54 60 L52 76 L58 88 L65 88 L58 76 L62 60Z', c.mid);
+  p.add('M60 56 L70 64 L66 67 L58 61Z', c.mid); p.add(pPL([[62, 62], [64, 70], [68, 65]]), c.spike);
+  p.add('M60 50 C64 42 68 36 72 34 L78 38 C74 42 70 48 66 56Z', c.body);
+  p.add(pPL([[72, 29], [65, 21], [75, 26]]), c.spike); p.add(pPL([[76, 28], [74, 19], [80, 27]]), c.spike);
+  p.add(pE(78, 34, 10, 7), c.body); p.add(pE(86, 36, 6, 4), c.body);
+  [[46, 50, 2.6], [54, 48, 2.6], [36, 50, 2]].forEach(q => p.add(pC(...q), c.spot));
+  p.add(pE(84, 38, 2.2, 1.4), c.cheek);
+  p.add(pC(78, 32, 2.8), c.eye); p.add(pC(78.7, 32.3, 1.7), c.pupil);
+  p.pop();
+}
+function stegoRainbow(p, x, y, s, flip, c, plates) {
+  p.at(x + (flip ? 100 * s : 0), y, s, 0, flip);
+  [[[20, 53], [26, 34], [34, 51]], [[32, 46], [40, 22], [49, 44]], [[46, 44], [55, 19], [64, 42]], [[60, 48], [67, 29], [75, 46]]].forEach((t, i) => p.add(pPL(t), plates[i % plates.length]));
+  p.add(pPL([[4, 52], [1, 43], [9, 50]]), plates[4 % plates.length]); p.add(pPL([[9, 57], [7, 47], [13, 55]]), plates[5 % plates.length]);
+  p.add('M20 62 C12 62 6 58 2 52 C8 64 16 70 24 70Z', c.body);
+  p.add(pRR(28, 66, 9, 22, 4.5), c.dark);
+  p.add(pE(44, 60, 27, 16), c.body);
+  p.add(pRR(52, 66, 9, 22, 4.5), c.mid);
+  p.add(pE(46, 68, 18, 6), c.belly);
+  p.add('M68 60 C74 58 80 60 84 64 C82 70 74 72 68 68Z', c.body);
+  [[36, 56, 3], [50, 54, 3.4], [58, 62, 2.4]].forEach(q => p.add(pC(...q), c.spot));
+  p.add(pE(80, 67, 2.2, 1.4), c.cheek);
+  p.add(pC(78, 63, 2.4), c.eye); p.add(pC(78.6, 63.3, 1.4), c.pupil);
+  p.pop();
+}
+/* props */
+function note(p, x, y, s, c, rot = -12) { p.at(x, y, s, rot); p.add(pRR(9, -56, 6, 56, 3), c); p.add('M12 -56 C24 -50 32 -42 30 -28 C26 -38 20 -42 12 -42Z', c); p.at(0, 0, 1, -20); p.add(pE(0, 0, 14, 10), c); p.pop(); p.pop(); }
+function present(p, x, y, s, c, rib) {
+  p.at(x, y, s);
+  p.add(pRR(-50, -60, 100, 70, 6), c); p.add(pRR(-56, -76, 112, 22, 6), c);
+  p.add(pRR(-8, -76, 16, 86, 2), rib);
+  p.at(-14, -80, 1, -25); p.add(pE(0, 0, 18, 11), rib); p.pop(); p.at(14, -80, 1, 25); p.add(pE(0, 0, 18, 11), rib); p.pop();
+  p.add(pC(0, -79, 7), rib);
+  p.pop();
+}
+function cake(p, x, y, s) {
+  p.at(x, y, s);
+  p.add(pE(0, 8, 150, 20), '#fff7f3');
+  p.add(pRR(-120, -70, 240, 80, 16), '#ffb3d1');
+  p.add('M-120 -60 C-120 -76 120 -76 120 -60 L120 -44 C108 -34 98 -46 86 -38 C74 -30 62 -46 50 -38 C38 -30 26 -46 14 -38 C2 -30 -10 -46 -22 -38 C-34 -30 -46 -46 -58 -38 C-70 -30 -82 -46 -94 -38 C-106 -30 -116 -42 -120 -44Z', '#fff0f6');
+  p.add(pRR(-84, -146, 168, 80, 14), '#c9a8f5');
+  p.add('M-84 -136 C-84 -150 84 -150 84 -136 L84 -122 C74 -112 64 -124 54 -116 C44 -108 34 -124 24 -116 C14 -108 4 -124 -6 -116 C-16 -108 -26 -124 -36 -116 C-46 -108 -56 -124 -66 -116 C-74 -110 -80 -118 -84 -122Z', '#fff0f6');
+  [[-90, -30], [-50, -24], [-10, -30], [30, -24], [70, -30], [100, -22]].forEach(([dx, dy], i) => p.add(pC(dx, dy, 7), ['#ff6fa8', '#ffd23d', '#6fb2ff', '#7fd38f'][i % 4]));
+  [[-50, -98], [-14, -92], [22, -98], [58, -92]].forEach(([dx, dy], i) => p.add(pC(dx, dy, 6), ['#ffd23d', '#ff6fa8', '#7fd38f', '#6fb2ff'][i % 4]));
+  [-48, -16, 16, 48].forEach((dx, i) => { p.add(pRR(dx - 6, -196, 12, 52, 5), ['#8fc4ff', '#ff9fc8', '#ffe08a', '#a6e6b0'][i]); p.add('M' + dx + ' -226 C' + (dx + 10) + ' -214 ' + (dx + 9) + ' -200 ' + dx + ' -198 C' + (dx - 9) + ' -200 ' + (dx - 10) + ' -214 ' + dx + ' -226Z', '#ffb23d'); p.add(pE(dx, -206, 3.5, 5), '#fff3c8'); });
+  p.pop();
+}
+function bone(p, x, y, s, rot, c) { p.at(x, y, s, rot); p.add(pRR(-34, -6, 68, 12, 6), c); [[-36, -7], [-36, 7], [36, -7], [36, 7]].forEach(([a, b]) => p.add(pC(a, b, 9), c)); p.pop(); }
+function footprint(p, x, y, s, rot, c) { p.at(x, y, s, rot); p.add(pE(0, 10, 18, 22), c); [[-18, -22, -25], [0, -30, 0], [18, -22, 25]].forEach(([a, b, r]) => { p.at(a, b, 1, r); p.add(pE(0, 0, 7, 15), c); p.pop(); }); p.pop(); }
+function cactus(p, x, y, s, c, c2) {
+  p.add(pRR(x - 22 * s, y - 200 * s, 44 * s, 200 * s, 22 * s), c);
+  p.add(pRR(x - 80 * s, y - 130 * s, 34 * s, 70 * s, 17 * s), c2); p.add(pRR(x - 80 * s, y - 80 * s, 70 * s, 24 * s, 12 * s), c2);
+  p.add(pRR(x + 46 * s, y - 160 * s, 34 * s, 80 * s, 17 * s), c2); p.add(pRR(x + 10 * s, y - 104 * s, 70 * s, 24 * s, 12 * s), c2);
+  p.add(pC(x, y - 204 * s, 12 * s), '#ff8fc2');
+}
+function jelly(p, x, y, s, c, c2) {
+  p.at(x, y, s);
+  [-24, -8, 8, 24].forEach((dx, i) => p.add(`M${dx - 4} 0 C${dx - 10} 20 ${dx + 6} 34 ${dx - 2} 60 L${dx + 4} 60 C${dx + 12} 34 ${dx - 4} 20 ${dx + 4} 0Z`, i % 2 ? c2 : c));
+  p.add('M-40 2 C-40 -30 -20 -44 0 -44 C20 -44 40 -30 40 2 C28 8 -28 8 -40 2Z', c);
+  p.add(pE(-14, -22, 8, 6), '#ffffff'); p.add(pC(10, -14, 5), c2);
+  p.pop();
+}
+function coral(p, x, y, s, c) {
+  p.at(x, y, s);
+  p.add(pRR(-8, -90, 16, 90, 8), c);
+  p.add('M-4 -50 C-20 -56 -34 -70 -38 -96 L-26 -98 C-24 -80 -14 -68 0 -64Z', c);
+  p.add('M4 -60 C20 -66 30 -84 32 -110 L44 -108 C42 -78 28 -60 6 -48Z', c);
+  [[-32, -100], [38, -112], [0, -94]].forEach(([a, b]) => p.add(pC(a, b, 10), c));
+  p.pop();
+}
+function bubbleSet(p, n, x0, x1, y0, y1, c) { for (let i = 0; i < n; i++) p.add(pC(p.R(x0, x1), p.R(y0, y1), p.R(8, 18)), c); }
+function bigLeaf(p, x, y, s, rot, c, vein) {
+  p.at(x, y, s, rot);
+  p.add('M0 0 C40 -60 140 -80 240 -20 C150 40 50 40 0 0Z', c);
+  p.add('M10 -2 C80 -30 160 -32 230 -20 C160 -24 80 -20 10 2Z', vein);
+  p.pop();
+}
+function teacup(p, x, y, s, c, c2) {
+  p.at(x, y, s);
+  p.add(pArc(42, -26, 10, 20, -90, 90, 12), c);
+  p.add('M-46 -48 L46 -48 C44 -10 26 6 0 6 C-26 6 -44 -10 -46 -48Z', c);
+  p.add(pRR(-46, -52, 92, 10, 5), c2); p.add(pE(0, 10, 56, 9), c2);
+  p.add(pC(0, -24, 9), c2);
+  p.pop();
+}
+function teapot(p, x, y, s, c, c2) {
+  p.at(x, y, s);
+  p.add('M50 -40 C80 -50 92 -76 104 -84 L110 -76 C98 -62 92 -34 60 -16Z', c);
+  p.add(pArc(-62, -44, 14, 26, 90, 270, 12), c);
+  p.add(pE(0, -40, 66, 52), c);
+  p.add(pE(0, -86, 40, 10), c2); p.add(pC(0, -100, 10), c2);
+  p.add(pE(0, -40, 30, 18), c2);
+  p.add(pE(0, 10, 50, 8), c2);
+  p.pop();
+}
+function boat(p, x, y, s) {
+  p.at(x, y, s);
+  p.add(pPL([[0, -260], [0, -60], [150, -60]]), '#fff7f3'); p.add(pPL([[-10, -230], [-10, -60], [-110, -60]]), '#ffd1e3');
+  p.add(pRR(-6, -270, 12, 220, 6), '#a8774f');
+  p.add('M-200 -60 L200 -60 C180 0 140 20 0 20 C-140 20 -180 0 -200 -60Z', '#ff8fb0');
+  p.add(pRR(-200, -64, 400, 16, 8), '#c9558f');
+  [-110, -40, 30, 100].forEach(dx => p.add(pC(dx, -24, 10), '#fff0f6'));
+  p.pop();
+}
+function waves(p, y, n, c) { for (let i = 0; i < n; i++) { const x = 40 + i * (920 / (n - 1)); p.add(pArc(x, y + (i % 2) * 18, 20, 30, 200, 340, 10), c); } }
+function bunting(p, y, cols) { for (let i = 0; i < 11; i++) { const x = 20 + i * 92, yy = y + Math.sin(i / 10 * Math.PI) * 40; p.add(pPL([[x, yy], [x + 80, yy + 4], [x + 40, yy + 74]]), cols[i % cols.length]); } }
+const sleepyEyes = c => q => { q.add(pC(187, 45, 15), c.body); q.add('M174 46 Q187 56 200 46 Q199 50 196 51 Q187 58 177 51 Q175 49 174 46Z', c.pupil); };
+const partyHat = q => { q.add(pPL([[168, 16], [196, -46], [222, 20]]), '#ffd23d'); q.add(pPL([[178, 0], [196, -46], [205, -26]]), '#ff6fa8'); q.add(pC(196, -48, 9), '#ff6fa8'); };
+
+const DINO2 = [
+  { id: 'ankylo', name: 'Armored Ankylo', tag: '🦕', build: p => {
+    band(p, 0, 0, 0, 0, '#cfe8ff', [320, 680], ['#dcefff', '#c2e0fb']);
+    sun(p, 830, 160, 60, 12, '#ffd27a', '#ffe39f', '#fff0c4', '#ffe08a');
+    cloud(p, 240, 150, .9, '#ffffff', '#eef4ff'); cloud(p, 560, 250, .6, '#ffffff', '#eef4ff');
+    band(p, 420, 34, .007, 0, '#b6e3ad', [300, 650], ['#c4ebba', '#a6d99d']);
+    band(p, 570, 22, .01, 2, '#8fd39a', [200, 500, 800], ['#9fdcaa', '#7fc98a']);
+    ankylo(p, 150, 330, 6.6, false, DC2.coral);
+    band(p, 900, 10, .02, 1, '#6fbb80', [300, 700], ['#7fc98f', '#5fae74']);
+    [[70, 860, '#ff8fc2', '#ffd27a'], [930, 850, '#b48cf0', '#fff3c8'], [800, 900, '#ffd27a', '#ff7aa8'], [200, 920, '#8fc4ff', '#ffd27a']].forEach(f => flower(p, f[0], f[1], .55, f[2], f[3]));
+    butterfly(p, 820, 420, .8, '#ff9fc8', '#ffd27a', '#fff3c8', '#5a3d86', 15);
+  } },
+  { id: 'duckbill', name: 'Duckbill Band', tag: '🦕', build: p => {
+    band(p, 0, 0, 0, 0, '#ffe0ec', [300, 700], ['#ffe9f2', '#ffd6e6']);
+    band(p, 300, 20, .01, 1, '#ffd1e3', [250, 750], ['#ffdbe9', '#f7c4da']);
+    bunting(p, 30, ['#ff6fa8', '#ffd23d', '#6fb2ff', '#7fd38f', '#b48cf0']);
+    band(p, 760, 0, 0, 0, '#c98b5e', [250, 500, 750], ['#d39a6a', '#bb7e52']);
+    band(p, 800, 0, 0, 0, '#a8774f', [], []);
+    para(p, 60, 230, 6.2, false, DC2.lilac);
+    p.add(pRR(640, 640, 220, 140, 20), '#ff8fb0'); p.add(pE(750, 640, 110, 30), '#fff0f6'); p.add(pE(750, 780, 110, 30), '#ff8fb0');
+    p.add(pPL([[650, 660], [700, 760], [750, 660], [800, 760], [850, 660], [850, 690], [800, 790], [750, 690], [700, 790], [650, 690]]), '#ffd23d');
+    p.at(700, 560, 1, -30); p.add(pRR(-5, -60, 10, 120, 5), '#a8774f'); p.add(pC(0, -64, 14), '#ff6fa8'); p.pop();
+    [[620, 200, '#a77be8'], [760, 140, '#ff6fa8'], [880, 260, '#6fb2ff'], [520, 120, '#7fd38f'], [900, 470, '#ffb23d']].forEach(([nx, ny, nc], i) => note(p, nx, ny, 1.3, nc, i % 2 ? 12 : -12));
+    [[120, 860], [300, 900], [520, 870], [880, 900]].forEach(([sx, sy], i) => p.add(pStar(sx, sy, 30), ['#ffd23d', '#fff3c8'][i % 2]));
+  } },
+  { id: 'spino', name: 'Spino River', tag: '🦕', build: p => {
+    band(p, 0, 0, 0, 0, '#d6f0ff', [350, 700], ['#e2f5ff', '#c9e9fb']);
+    mountain(p, 220, 470, 520, 300, '#a6c9e8', '#8fb6db', '#ffffff'); mountain(p, 720, 480, 600, 360, '#b6d4ef', '#9fc2e4', '#ffffff');
+    band(p, 430, 18, .01, 0, '#9fd9a0', [250, 700], ['#aee2ae', '#8fcf90']);
+    spino(p, 110, 190, 7.4, false, DC2.leaf);
+    band(p, 690, 14, .014, 1, '#6fb8ef', [300, 600, 900], ['#82c4f5', '#5fa8e6']);
+    waves(p, 760, 9, '#cfeeff');
+    fish(p, 860, 640, 1, '#ffb070', '#ff7a5a', true); fish(p, 140, 860, .9, '#ff9fc8', '#e2679f');
+    band(p, 900, 12, .02, 2, '#7fc98a', [400, 800], ['#8fd39a', '#6fbb7c']);
+    [80, 130, 880, 930, 600].forEach((cx, i) => drawCattail(p, cx, 960, 1, 150 + (i % 3) * 30));
+  } },
+  { id: 'ocean', name: 'Ocean Friends', tag: '🦕', build: p => {
+    band(p, 0, 0, 0, 0, '#8fd8f5', [300, 700], ['#9fdff8', '#7fcff0']);
+    band(p, 260, 16, .012, 0, '#6fc4ec', [250, 650], ['#7fcdf0', '#5fb8e4']);
+    band(p, 540, 16, .012, 2, '#4fa8dc', [350, 800], ['#5fb4e4', '#3f9bd2']);
+    plesio(p, 120, 200, 7, false, DC2.mint);
+    jelly(p, 820, 260, 1.4, '#ffb3d1', '#ff8fc2'); jelly(p, 700, 140, .9, '#d9c4ff', '#b994f2');
+    fish(p, 820, 600, 1, '#ffd23d', '#ff9f3d', true); fish(p, 640, 720, .7, '#ff8fb0', '#e2679f');
+    band(p, 840, 18, .012, 1, '#ffe2a8', [300, 650], ['#ffeabb', '#f5d696']);
+    coral(p, 120, 960, 1.4, '#ff8f8f'); coral(p, 880, 980, 1.2, '#b994f2'); coral(p, 420, 990, .9, '#ffb070');
+    drawStarfish(p, 640, 930, 36, '#ff9a6b', '#ffb38a'); drawShell(p, 300, 950, 1, '#fff3e6', '#ffd9c4');
+    bubbleSet(p, 10, 560, 980, 380, 560, '#e2f6ff');
+  } },
+  { id: 'bonk', name: 'Bonk Buddies', tag: '🦕', build: p => {
+    band(p, 0, 0, 0, 0, '#fff1c9', [300, 700], ['#fff6da', '#ffeab3']);
+    sun(p, 500, 170, 70, 14, '#ffd27a', '#ffe39f', '#fff0c4', '#ffe08a');
+    band(p, 450, 26, .008, 0, '#c4e89a', [350, 700], ['#d0eeaa', '#b6dc8a']);
+    pachy(p, -40, 360, 5.6, false, DC2.sea);
+    pachy(p, 480, 360, 5.6, true, DC2.rose);
+    heartAt(p, 500, 340, 90, '#ff6fa8'); heartAt(p, 420, 260, 50, '#ff9fc8'); heartAt(p, 590, 250, 44, '#ffb3d1');
+    band(p, 860, 12, .02, 1, '#8fcf6a', [300, 700], ['#9fd97a', '#7fbf5a']);
+    mushroom(p, 120, 980, .8, '#ff6b6b', '#ffffff', '#fff1dc'); mushroom(p, 880, 990, .7, '#b48cf0', '#ffffff', '#fff1dc');
+    [[330, 920, '#ffd27a', '#ff7aa8'], [650, 930, '#ff8fc2', '#ffd27a']].forEach(f => flower(p, f[0], f[1], .45, f[2], f[3]));
+  } },
+  { id: 'raptors', name: 'Desert Raptors', tag: '🦕', build: p => {
+    band(p, 0, 0, 0, 0, '#ffd6a8', [300, 700], ['#ffdfb8', '#ffcc96']);
+    band(p, 200, 14, .01, 0, '#ffbf9a', [250, 650], ['#ffcaa8', '#ffb38a']);
+    sun(p, 760, 330, 90, 0, '#ffd27a', '#ffe39f', '#fff0c4', '#ffe08a');
+    band(p, 420, 40, .006, 1, '#f2b77a', [300, 700], ['#f5c288', '#e8a86a']);
+    band(p, 560, 30, .008, 3, '#e8a05b', [250, 600, 850], ['#eead6a', '#dc934e']);
+    cactus(p, 870, 640, 1.1, '#5fae80', '#6fbf8f'); cactus(p, 120, 600, .8, '#5fae80', '#6fbf8f');
+    raptor(p, 60, 400, 5.2, false, DC2.sun);
+    raptor(p, 520, 560, 3.6, false, DC2.coral);
+    [[150, 860, 60], [240, 900, 44], [600, 900, 40], [680, 930, 30]].forEach(([dx, dy, r]) => p.add(pC(dx, dy, r), '#f7d9b0'));
+    band(p, 930, 8, .02, 1, '#d98f4e', [500], ['#e39c5c']);
+  } },
+  { id: 'birthday', name: 'Dino Birthday', tag: '🦕', build: p => {
+    band(p, 0, 0, 0, 0, '#e8dcff', [300, 700], ['#efe6ff', '#ddd0fb']);
+    bunting(p, 20, ['#ffd23d', '#ff6fa8', '#7fd38f', '#6fb2ff']);
+    [[120, 250, '#ff6fa8'], [230, 200, '#ffd23d'], [880, 240, '#6fb2ff'], [780, 190, '#7fd38f']].forEach(([bx, by, bc]) => { p.add(pRR(bx - 2, by + 60, 4, 260, 2), '#fff7f3'); balloon(p, bx, by, 1, bc); });
+    band(p, 780, 0, 0, 0, '#ffd1e3', [250, 500, 750], ['#ffdbe9', '#f7c4da']);
+    rex(p, 20, 380, 2.2, false, DC2.mint, partyHat);
+    cake(p, 700, 800, 1.3);
+    present(p, 380, 930, 1.2, '#6fb2ff', '#ffd23d'); present(p, 900, 960, .9, '#ff8fc2', '#fff7f3');
+    for (let i = 0; i < 14; i++) p.add(pStar(p.R(320, 980), p.R(330, 520), p.R(10, 18)), ['#ffd23d', '#ff6fa8', '#6fb2ff', '#7fd38f'][i % 4]);
+  } },
+  { id: 'treetop', name: 'Treetop Snack', tag: '🦕', build: p => {
+    band(p, 0, 0, 0, 0, '#c7ecff', [300, 700], ['#d4f1ff', '#b8e3fb']);
+    cloud(p, 200, 130, .9, '#ffffff', '#eef4ff');
+    band(p, 700, 20, .01, 0, '#9fdc8a', [300, 650], ['#ace59a', '#8fcf7a']);
+    p.add(pPL([[840, 1000], [860, 300], [910, 300], [930, 1000]]), '#a8774f');
+    [[880, 220, 110], [760, 260, 80], [980, 300, 90], [820, 360, 70], [940, 160, 70], [700, 330, 60]].forEach(([cx, cy, r], i) => p.add(pC(cx, cy, r), ['#5fb874', '#7fd38f', '#6fc47f'][i % 3]));
+    [[790, 210], [900, 300], [960, 200], [740, 300]].forEach(([fx, fy]) => p.add(pC(fx, fy, 16), '#ff8fc2'));
+    longneck(p, -30, 190, 8.6, false, DC2.sun);
+    p.add(pE(762, 316, 18, 8), '#5fb874');
+    band(p, 900, 12, .02, 1, '#7fc96a', [400, 700], ['#8fd37a', '#6fbb5a']);
+    butterfly(p, 160, 420, .9, '#b48cf0', '#ff9fc8', '#fff3c8', '#5a3d86', -15);
+  } },
+  { id: 'bedtime', name: 'Sleepy Dino', tag: '🦕', build: p => {
+    band(p, 0, 0, 0, 0, '#5d3590', [300, 700], ['#6a3f9e', '#523084']);
+    p.add(pRR(560, 70, 340, 300, 30), '#2a1a48');
+    p.add(pC(800, 170, 56), '#fff3c8'); p.add(pC(822, 152, 48), '#2a1a48');
+    [[620, 120], [680, 290], [760, 320], [860, 280], [640, 220]].forEach(([sx, sy]) => p.add(pStar(sx, sy, 16), '#ffd27a'));
+    p.add(pRR(548, 60, 364, 22, 10), '#c9a8f5'); p.add(pRR(548, 358, 364, 22, 10), '#c9a8f5'); p.add(pRR(722, 70, 16, 300, 6), '#c9a8f5');
+    band(p, 820, 0, 0, 0, '#3f2766', [250, 500, 750], ['#47306f', '#38225c']);
+    p.add(pRR(120, 470, 760, 150, 40), '#ff9fc8'); p.add(pRR(840, 440, 60, 420, 26), '#e2679f'); p.add(pRR(100, 540, 50, 320, 22), '#e2679f');
+    p.add(pE(700, 640, 120, 50), '#fff7f3');
+    rex(p, 100, 394, 3.2, false, DC2.lilac, sleepyEyes(DC2.lilac));
+    p.add(pRR(130, 620, 700, 240, 30), '#8fc4ff');
+    for (let r = 0; r < 2; r++) for (let q = 0; q < 6; q++) p.add(pRR(160 + q * 110, 650 + r * 100, 90, 80, 14), (q + r) % 2 ? '#b8dbff' : '#ffd1e3');
+    p.add(pRR(100, 820, 800, 80, 24), '#e2679f');
+    band(p, 900, 0, 0, 0, '#3f2766', [], []);
+    p.add(pE(500, 950, 300, 40), '#ff8fb0'); p.add(pE(500, 950, 200, 26), '#ffb3d1');
+    [[660, 470, 40], [720, 420, 30], [770, 380, 22]].forEach(([zx, zy, zs]) => p.add(pPL([[zx, zy], [zx + zs, zy], [zx, zy + zs], [zx + zs, zy + zs], [zx + zs, zy + zs + 6], [zx - 4, zy + zs + 6], [zx + zs - 6, zy + 6], [zx, zy + 6]]), '#ffffff'));
+  } },
+  { id: 'falls', name: 'Rainbow Falls', tag: '🦕', build: p => {
+    band(p, 0, 0, 0, 0, '#d9f2ff', [300, 700], ['#e4f6ff', '#cdecfb']);
+    rainbow(p, 500, 520, 230, 26, ['#ff6b6b', '#ffb23d', '#ffd23d', '#7fd38f', '#6fb2ff', '#b48cf0'], 2);
+    p.add(pPL([[0, 200], [300, 220], [380, 760], [0, 760]]), '#9b7aa8'); p.add(pPL([[300, 220], [380, 760], [320, 760], [260, 240]]), '#86689a');
+    p.add(pPL([[1000, 180], [640, 210], [600, 760], [1000, 760]]), '#9b7aa8'); p.add(pPL([[640, 210], [600, 760], [680, 760], [700, 230]]), '#b090bd');
+    for (let i = 0; i < 6; i++) p.add(pRR(320 + i * 54, 210, 54, 560, 4), i % 2 ? '#8fd0f5' : '#b8e3fb');
+    [[60, 180, 70], [180, 190, 60], [860, 170, 70], [720, 190, 56]].forEach(([cx, cy, r], i) => p.add(pC(cx, cy, r), i % 2 ? '#6fbf8f' : '#82cc9c'));
+    p.add(pE(480, 800, 470, 120), '#6fb8ef'); p.add(pE(480, 800, 300, 70), '#8fcff5');
+    bubbleSet(p, 9, 320, 640, 740, 820, '#ffffff');
+    stegoRainbow(p, 620, 520, 3.4, true, DC2.mint, ['#ff6b6b', '#ffb23d', '#ffd23d', '#7fd38f', '#6fb2ff', '#b48cf0']);
+    ptero(p, 80, 280, 2.2, false, DCOL.pink);
+    band(p, 920, 10, .02, 1, '#6fbb80', [400, 800], ['#7fc98f', '#5fae74']);
+  } },
+  { id: 'fossil', name: 'Fossil Dig', tag: '🦕', build: p => {
+    band(p, 0, 0, 0, 0, '#cfeaff', [300, 700], ['#dcefff', '#c2e0fb']);
+    sun(p, 860, 110, 50, 10, '#ffd27a', '#ffe39f', '#fff0c4', '#ffe08a');
+    band(p, 300, 10, .012, 0, '#8fcf6a', [300, 700], ['#9fd97a', '#7fbf5a']);
+    band(p, 350, 12, .01, 1, '#c98b5e', [400, 800], ['#d39a6a', '#bb7e52']);
+    band(p, 540, 14, .01, 2, '#b07650', [250, 650], ['#bb8260', '#a06a46']);
+    band(p, 760, 14, .01, 3, '#956246', [350, 750], ['#a06c4e', '#87573c']);
+    trike(p, 560, 140, 2.2, true, DCOL.orange);
+    p.add(pRR(300, 200, 12, 120, 5), '#a8774f'); p.add('M286 316 L326 316 L320 352 L292 352Z', '#9aa8b8');
+    const B = '#fff3dc';
+    p.add('M740 520 C790 470 880 480 900 540 C905 580 860 600 820 590 L760 590 C730 580 720 545 740 520Z', B);
+    p.add(pC(820, 530, 18), '#956246');
+    for (let i = 0; i < 8; i++) p.add(pC(700 - i * 60, 600 + Math.sin(i * .6) * 20, 22), B);
+    for (let i = 0; i < 5; i++) { p.at(640 - i * 64, 640, 1, 8); p.add(pRR(-8, 0, 16, 110 - i * 10, 8), B); p.pop(); }
+    bone(p, 560, 800, 1.6, -10, B); bone(p, 260, 820, 1.4, 20, B); bone(p, 820, 840, 1.2, 70, B);
+    [[150, 450, 26], [900, 700, 22], [420, 900, 30], [700, 930, 20]].forEach(([rx, ry, rr]) => p.add(pE(rx, ry, rr * 1.4, rr), '#7a5a4a'));
+    p.add('M120 880 C120 850 160 840 180 860 C200 880 180 910 150 905 C130 900 120 895 120 880Z', '#e8d4b8');
+  } },
+  { id: 'footprints', name: 'Dino Footprints', tag: '🦕', build: p => {
+    band(p, 0, 0, 0, 0, '#bfe6ff', [300, 700], ['#cdeeff', '#b2ddf8']);
+    sun(p, 160, 120, 56, 12, '#ffd27a', '#ffe39f', '#fff0c4', '#ffe08a');
+    band(p, 230, 10, .015, 0, '#5fb8e4', [350, 750], ['#6fc4ec', '#4fa8dc']);
+    band(p, 320, 12, .012, 1, '#8fd8f5', [], []);
+    waves(p, 300, 8, '#e2f6ff');
+    band(p, 380, 16, .01, 2, '#ffe2a8', [300, 650], ['#ffeabb', '#f5d696']);
+    for (let i = 0; i < 7; i++) footprint(p, 120 + i * 105, 900 - i * 80 + (i % 2) * 40, 1.5, 55, '#e8c47e');
+    rex(p, 640, 240, 1.5, false, DC2.rose);
+    drawShell(p, 120, 640, 1.2, '#fff3e6', '#ffd9c4'); drawShell(p, 900, 900, 1, '#ffe0ec', '#ffb3d1');
+    drawStarfish(p, 300, 560, 40, '#ff9a6b', '#ffb38a'); drawStarfish(p, 860, 700, 32, '#ff8fc2', '#ffb3d1', -60);
+    drawBucket(p, 560, 960, .8, '#6fb2ff', '#ffd23d');
+  } },
+  { id: 'skating', name: 'Ice Skating', tag: '🦕', build: p => {
+    band(p, 0, 0, 0, 0, '#dce8ff', [300, 700], ['#e6efff', '#d0e0fb']);
+    mountain(p, 250, 430, 560, 280, '#b8c8ef', '#a3b6e4', '#ffffff'); mountain(p, 760, 440, 520, 320, '#c4d2f2', '#aebfe8', '#ffffff');
+    band(p, 420, 10, .012, 0, '#ffffff', [300, 700], ['#f4f8ff', '#eaf0ff']);
+    pine(p, 80, 560, 1, '#4f9a8a', '#5fae9c', '#7a5a4a'); pine(p, 940, 580, 1.1, '#4f9a8a', '#5fae9c', '#7a5a4a');
+    p.add(pE(500, 760, 460, 170), '#a6d8f5'); p.add(pE(500, 760, 380, 120), '#c4e6fb');
+    [[300, 700, 60], [640, 820, 80]].forEach(([lx, ly, lw]) => p.add(pRR(lx, ly, lw, 8, 4), '#ffffff'));
+    stego(p, 120, 470, 3.2, false, DC2.sea);
+    rex(p, 520, 400, 1.9, true, DC2.rose, scarf('#ffd23d', '#ff6fa8'));
+    drawSnowman(p, 880, 900, .7);
+    for (let i = 0; i < 18; i++) drawSnowflake(p, p.R(30, 970), p.R(30, 380), p.R(10, 20), '#ffffff', '#e6efff');
+  } },
+  { id: 'cliffnest', name: 'Cliff Nest', tag: '🦕', build: p => {
+    band(p, 0, 0, 0, 0, '#ffe3d1', [300, 700], ['#ffead9', '#ffd9c4']);
+    band(p, 200, 12, .01, 0, '#ffd1e3', [400, 800], ['#ffdbe9', '#f7c4da']);
+    cloud(p, 700, 150, 1, '#ffffff', '#fff0f6'); cloud(p, 420, 280, .6, '#ffffff', '#fff0f6');
+    band(p, 760, 12, .014, 1, '#7fc4f5', [300, 700], ['#8fcff8', '#6fb8ef']);
+    waves(p, 820, 8, '#d6f0ff');
+    p.add(pPL([[0, 440], [120, 400], [300, 420], [380, 1000], [0, 1000]]), '#b0897a'); p.add(pPL([[300, 420], [380, 1000], [300, 1000], [250, 440]]), '#9a7466');
+    p.add(pPL([[60, 600], [160, 580], [200, 640]]), '#9a7466'); p.add(pPL([[80, 780], [200, 760], [240, 830]]), '#9a7466');
+    p.add(pE(190, 420, 130, 36), '#c98b5e'); p.add(pE(190, 408, 100, 20), '#a8774f');
+    egg(p, 140, 380, .9, '#fff3dc', '#ffb3d1'); egg(p, 245, 384, .8, '#e8dcff', '#b994f2');
+    ptero(p, 150, 300, 1.2, false, DC2.lilac);
+    ptero(p, 520, 330, 4.2, true, DC2.coral);
+    [[700, 500], [820, 560]].forEach(([bx, by]) => p.add('M' + bx + ' ' + by + ' q20 -20 40 0 q20 -20 40 0 l-6 6 q-14 -14 -34 0 q-20 -14 -34 0Z', '#7a5a8a'));
+  } },
+  { id: 'peekaboo', name: 'Jungle Peekaboo', tag: '🦕', build: p => {
+    band(p, 0, 0, 0, 0, '#b8e6c4', [300, 700], ['#c6edd0', '#a8dcb6']);
+    [[100, 100, 90], [300, 60, 70], [700, 80, 100], [920, 140, 80]].forEach(([cx, cy, r], i) => p.add(pC(cx, cy, r), i % 2 ? '#8fcf9a' : '#9fd9a8'));
+    rex(p, -420, 190, 5, false, DC2.mint);
+    bigLeaf(p, -40, 760, 2.2, -30, '#4fa36a', '#7fd38f'); bigLeaf(p, 1040, 820, 2.2, 205, '#5fb874', '#8fdc9a');
+    bigLeaf(p, -60, 980, 2.4, -10, '#3f9a5f', '#6fc47f'); bigLeaf(p, 1060, 1000, 2.4, 190, '#4fa36a', '#7fd38f');
+    bigLeaf(p, 300, 1060, 1.8, -60, '#5fb874', '#8fdc9a');
+    [[150, 420], [880, 380], [120, 260]].forEach(([fx, fy], i) => drawBlossom(p, fx, fy, 1, ['#ff8fc2', '#ffd27a', '#b48cf0'][i], '#fff3c8'));
+    butterfly(p, 860, 560, .9, '#ffb070', '#ffd27a', '#fff3c8', '#5a3d86', 20);
+  } },
+  { id: 'hellotrike', name: 'Hello Trike!', tag: '🦕', build: p => {
+    p.add(pRR(0, 0, 1000, 1000, 0), '#fff0c9');
+    for (let i = 0; i < 16; i++) p.add(pPL([[500, 500], [500 + Math.cos((i * 22.5 - 6) * D2R) * 900, 500 + Math.sin((i * 22.5 - 6) * D2R) * 900], [500 + Math.cos((i * 22.5 + 6) * D2R) * 900, 500 + Math.sin((i * 22.5 + 6) * D2R) * 900]]), i % 2 ? '#ffe0a8' : '#ffd6e6');
+    trike(p, -190, 60, 8.2, false, DC2.rose);
+    [[140, 860, '#ff8fc2'], [300, 930, '#ffd27a'], [860, 880, '#b48cf0'], [700, 950, '#8fc4ff'], [80, 700, '#ffd27a']].forEach(([fx, fy, fc]) => drawBlossom(p, fx, fy, 1.2, fc, '#fff3c8'));
+    [[860, 160], [120, 140], [940, 520]].forEach(([sx, sy]) => p.add(pStar(sx, sy, 34), '#ffd23d'));
+  } },
+  { id: 'rainbowstego', name: 'Rainbow Stego', tag: '🦕', build: p => {
+    band(p, 0, 0, 0, 0, '#e3f4ff', [300, 700], ['#ecf8ff', '#d8effb']);
+    rainbow(p, 500, 760, 230, 44, ['#ff6b6b', '#ffb23d', '#ffd23d', '#7fd38f', '#6fb2ff', '#b48cf0'], 1);
+    cloud(p, 140, 720, 1.2, '#ffffff', '#eef4ff'); cloud(p, 860, 720, 1.2, '#ffffff', '#eef4ff');
+    band(p, 700, 16, .01, 1, '#a6e09a', [300, 700], ['#b4e8a8', '#96d68a']);
+    stegoRainbow(p, 110, 220, 7.8, false, DC2.lilac, ['#ff6b6b', '#ffb23d', '#ffd23d', '#7fd38f', '#6fb2ff', '#b48cf0']);
+    band(p, 940, 8, .02, 1, '#7fc96a', [500], ['#8fd37a']);
+  } },
+  { id: 'mama', name: 'Mama and Baby', tag: '🦕', build: p => {
+    band(p, 0, 0, 0, 0, '#ffd9c4', [300, 700], ['#ffe3d1', '#ffcfb5']);
+    band(p, 180, 14, .01, 0, '#ffc4d6', [250, 650], ['#ffd1e0', '#ffb8cc']);
+    sun(p, 780, 420, 90, 0, '#ffd27a', '#ffe39f', '#fff0c4', '#ffe08a');
+    band(p, 520, 30, .008, 1, '#d9a8d9', [300, 700], ['#e2b6e2', '#cf9acf']);
+    band(p, 640, 20, .01, 2, '#a6d99a', [250, 600, 850], ['#b4e2a8', '#96cf8a']);
+    longneck(p, 30, 170, 7.4, false, DC2.sea);
+    longneck(p, 600, 590, 3.4, false, DC2.rose);
+    heartAt(p, 860, 520, 90, '#ff6fa8'); heartAt(p, 760, 560, 50, '#ff9fc8');
+    band(p, 920, 10, .02, 1, '#7fc96a', [400, 800], ['#8fd37a', '#6fbb5a']);
+    [[90, 900, '#ffd27a', '#ff7aa8'], [940, 900, '#ff8fc2', '#fff3c8']].forEach(f => flower(p, f[0], f[1], .5, f[2], f[3]));
+  } },
+  { id: 'teaparty', name: 'Tea Party', tag: '🦕', build: p => {
+    band(p, 0, 0, 0, 0, '#e6f6e0', [300, 700], ['#eefaea', '#dcf0d4']);
+    bunting(p, 30, ['#ff9fc8', '#ffd27a', '#b48cf0', '#8fd8c3']);
+    tree(p, 140, 520, .9, '#a8774f', ['#7fd38f', '#9fe0a8', '#6fc47f'], '#ff8fc2');
+    tree(p, 880, 540, .8, '#a8774f', ['#7fd38f', '#9fe0a8', '#6fc47f'], '#ffd27a');
+    pachy(p, 30, 300, 4.4, false, DC2.sun);
+    trike(p, 470, 260, 4.6, true, DC2.mint);
+    p.add(pRR(80, 620, 840, 70, 20), '#ff9fc8');
+    p.add('M80 650 L920 650 L940 900 L60 900Z', '#fff0f6');
+    for (let i = 0; i < 7; i++) p.add(pE(120 + i * 127, 900, 64, 26), i % 2 ? '#ffd1e3' : '#ffb3d1');
+    teapot(p, 500, 610, 1.3, '#8fc4ff', '#e6f2ff');
+    teacup(p, 250, 630, 1, '#ffd27a', '#fff6d6'); teacup(p, 770, 630, 1, '#c9a8f5', '#f3eaff');
+    cookie(p, 360, 760, .7); cookie(p, 650, 770, .7);
+  } },
+  { id: 'boatride', name: 'Boat Ride', tag: '🦕', build: p => {
+    band(p, 0, 0, 0, 0, '#cdeeff', [300, 700], ['#daf3ff', '#bfe6fb']);
+    sun(p, 840, 140, 60, 12, '#ffd27a', '#ffe39f', '#fff0c4', '#ffe08a');
+    cloud(p, 300, 140, .8, '#ffffff', '#eef4ff');
+    mountain(p, 200, 520, 460, 260, '#a8c4ec', '#93b3e2', '#ffffff'); mountain(p, 620, 520, 560, 340, '#b8d0f0', '#a2bfe6', '#ffffff');
+    band(p, 480, 12, .01, 0, '#8fcf8a', [300, 700], ['#9fd99a', '#7fc37a']);
+    band(p, 540, 10, .012, 1, '#6fb8ef', [300, 700], ['#82c4f5', '#5fa8e6']);
+    rex(p, 330, 410, 1.6, false, DC2.coral);
+    boat(p, 480, 790, 1.3);
+    waves(p, 860, 8, '#d6f0ff'); waves(p, 950, 7, '#b8e3fb');
+    fish(p, 140, 720, .8, '#ffd23d', '#ff9f3d'); fish(p, 880, 680, .7, '#ff9fc8', '#e2679f', true);
+    [[160, 620], [860, 600]].forEach(([dx, dy]) => { p.add(pE(dx, dy, 30, 18), '#ffffff'); p.add(pC(dx + 22, dy - 18, 13), '#ffffff'); p.add(pPL([[dx + 32, dy - 20], [dx + 48, dy - 16], [dx + 32, dy - 12]]), '#ffb23d'); });
+  } }
+];
+DINO2.forEach((h, i) => { h.seed = 2301 + i * 19; });
+
 HALLOWEEN2.forEach((h, i) => { h.seed = 1501 + i * 13; });
 MORE.forEach((h, i) => { h.seed = 1701 + i * 11; });
 PICS.splice(HALLOWEEN.length, 0, ...HALLOWEEN2);
 PICS.splice(HALLOWEEN.length + HALLOWEEN2.length, 0, ...FALL);
+PICS.splice(HALLOWEEN.length + HALLOWEEN2.length + FALL.length, 0, ...DINO2);
 PICS.push(...MORE);
 
 /* Merge near-identical shades so each picture has at most 20 numbered colors. */
@@ -5061,12 +5515,13 @@ const tfAttr = r => r.tf ? ` transform="matrix(${r.tf.map(v => +v.toFixed(4)).jo
 const UNFILLED = '#f6f2fa', SELFILL = '#cfc6dd';
 function picSVG(pic, mode, filled = new Set()) {
   const regs = built(pic);
-  let s = `<svg viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">`;
+  let s = `<svg viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"><defs><clipPath id="picClip"><rect width="1000" height="1000"/></clipPath></defs><g clip-path="url(#picClip)">`;
   regs.forEach((r, i) => {
     const fill = mode === 'line' ? '#ffffff' : (r.decor || filled.has(i) || mode === 'full') ? r.c : UNFILLED;
     const stroke = mode === 'line' ? '#3b2a55' : mode === 'full' ? 'none' : '#cbbfdc';
     s += `<path d="${r.d}"${tfAttr(r)} data-i="${i}" fill="${fill}" stroke="${stroke}" stroke-width="${mode === 'line' ? 1.6 : 1}" vector-effect="non-scaling-stroke"/>`;
   });
+  s += '</g>';
   if (mode === 'cbn') { s += '<g>'; regs.forEach((r, i) => { if (!r.decor) s += `<text class="lbl" data-i="${i}" x="${f1(r.lx)}" y="${f1(r.ly)}" font-size="${f1(r.fs)}" fill="#5f5080" stroke="#ffffff" stroke-width="${f1(Math.min(r.fs * .14, 5))}" text-anchor="middle"${filled.has(i) ? ' display="none"' : ''}>${r.num + 1}</text>`; }); s += '</g>'; }
   return s + '</svg>';
 }
