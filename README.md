@@ -2,7 +2,7 @@
 
 A calm puzzle, music, learning and art game for little kids. Made by Coll Business Solutions LLC.
 
-**Play it:** https://jeremymcollins89-prog.github.io/lydia-dino-garden/
+**Play it:** https://collbusinesssolutions.com/dino-garden/
 
 - No accounts, no ads, no tracking.
 - Everything (the child's name, progress, paintings) is saved only on the device.
@@ -20,7 +20,7 @@ A calm puzzle, music, learning and art game for little kids. Made by Coll Busine
 All files sit at the top level of the repository (not inside a folder):
 
 ```
-lydia-dino-garden/          <- the repository
+dino-garden/                <- the repository
 ├── index.html              <- the game
 ├── sw.js                   <- offline helper (saves the game on the device)
 ├── manifest.json           <- app name and icons for "Add to Home Screen"
@@ -31,7 +31,7 @@ lydia-dino-garden/          <- the repository
 
 ## Updating the game
 
-Run the PowerShell publish script with the new `lydia-dino-garden.zip` in Downloads, or upload the changed files on GitHub with **Add file → Upload files**. Devices pick up the new version the next time they open the game online.
+Run the PowerShell publish script with the new game zip in Downloads, or upload the changed files on GitHub with **Add file → Upload files**. Devices pick up the new version the next time they open the game online.
 
 ## Locking a device into the game
 
